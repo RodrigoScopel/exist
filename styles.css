@@ -1,40 +1,33 @@
-body, html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  font-family: 'FONTSPRING DEMO - Integral CF Medium', sans-serif;
-}
-
-#bg-video {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: -1;
-}
-
-#hero-type {
-  position: absolute;
-  top: 10%;
-  right: 5%;
-  font-size: 2.5rem;
-  color: #78091b;
-  max-width: 40%;
-  line-height: 1.2;
-}
-
-#hero-type::after {
-  content: '';
-  animation: blink 1s step-end infinite;
-  font-weight: 300;
-  color: #78091b;
-  margin-left: 2px;
-}
-
-@keyframes blink {
-  50% { opacity: 0; }
-}
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'FONTSPRING DEMO - Integral CF Medium', sans-serif;
+    background: black;
+    color: #78091b;
+    overflow-x: hidden;
+  }
+  video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    object-position: center;
+    z-index: -1;
+  }
+  #hero-type {
+    position: fixed;
+    top: 10%;
+    right: 8%;
+    font-size: 2.5rem;
+    line-height: 1.3;
+    color: #78091b;
+    max-width: 600px;
+    padding: 1rem;
+  }
+</style>
