@@ -1,42 +1,23 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Scroll Animation</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EXIST Landing</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <canvas id="scrollCanvas" width="1920" height="1080"></canvas>
-    <video
-      id="introVideo"
-      muted
-      playsinline
-      loop
-      autoplay
-      preload="auto"
-      style="display: block; position: absolute; top: 0; left: 0; width: 100%; height: auto; border-radius: 1rem;">
-      <source src="https://res.cloudinary.com/dicgr2srv/video/upload/v1750803048/existLandingEx_an6flp.mp4" type="video/mp4" />
-    </video>
-      <div id="hero-type" style="
-        font-family: 'FONTSPRING DEMO - Integral CF Medium', regular;
-        font-size: 2.5rem;
-        line-height: 1.2;
-        max-width: 600px;
-        padding: 1rem;
-        color: #78091b;
-        position: absolute;
-        bottom: 10%;
-        right: 10%;
-        text-align: right;">
-      </div>
+  <video id="bg-video" autoplay muted playsinline loop>
+    <source src="https://res.cloudinary.com/dqtb4fnjp/video/upload/v1719233642/existLandingEx.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
 
-  <div style="height: 500px;"></div>
-  <canvas id="scrollCanvas" width="1920" height="1080"></canvas>
-  <!-- ✅ SCROLL SPACER HERE -->
-  <div id="scroll-spacer"></div>
-  
-  <script src="script.js" type="module"></script>
+  <div id="hero-type"></div>
+
+  <script src="https://unpkg.com/theaterjs@latest/dist/theater.min.js"></script>
+  <script src="typing.js"></script>
+</body>
+</html>
   
 </body>
 </html>
