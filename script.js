@@ -80,3 +80,66 @@ window.addEventListener('scroll', () => {
 
   drawFrame(frameIndex);
 });
+
+function initTypingAnimation() {
+  // Inject blinking cursor style
+  const style = document.createElement('style');
+  style.innerHTML = `
+    #hero-type::after {
+      content: '';
+      animation: blink 1s step-end infinite;
+      font-weight: 300;
+      color: #78091b;
+      margin-left: 2px;
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
+
+  const startTypingLoop = () => {
+    const container = document.getElementById('hero-type');
+    if (!window.theaterJS || !container) return;
+
+    container.textContent = '';
+
+    const theater = window.theaterJS();
+    theater
+      .addActor('hero-type', {
+        speed: 0.9,
+        accuracy: 0.97,
+        element: container,
+      })
+      .addScene('hero-type:EXIST to evolve', 1000)
+      .addScene('hero-type:evolve to EXIST', 1000)
+      .addScene('hero-type:coming soon', 1000)
+      .addScene('hero-type:', 1000)
+      .addScene(() => {
+        startTypingLoop(); // 🔁 Loop it
+      })
+      .play();
+  };
+
+  const loadTheaterJS = () => {
+    if (window.theaterJS) {
+      startTypingLoop();
+    } else {
+      console.error('❌ TheaterJS not available');
+    }
+  };
+
+  if (!window.theaterJS) {
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/theaterjs@latest/dist/theater.min.js';
+    script.async = true;
+    script.onload = loadTheaterJS;
+    script.onerror = () => console.error('❌ Failed to load Theater.js');
+    document.body.appendChild(script);
+  } else {
+    loadTheaterJS();
+  }
+}
+
+// ✅ Run it after DOM is ready
+document.addEventListener('DOMContentLoaded', initTypingAnimation);
