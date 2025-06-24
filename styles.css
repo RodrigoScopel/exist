@@ -8,4 +8,6 @@ canvas {
   height: auto;
   display: block;
   border-radius: 1rem;
+  position: sticky;
+  top: 0;
 }
