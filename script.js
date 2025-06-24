@@ -18,7 +18,7 @@ const ctx = canvas.getContext('2d');
 const video = document.getElementById('introVideo');
 
 const totalFrames = 585;
-const scrollEnd = 5000;  // Adjust as needed
+const scrollEnd = 500;  // Adjust as needed
 let lastFrameIndex = -1;
 
 function drawFrame(index) {
