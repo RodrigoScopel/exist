@@ -1,95 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>EXIST Landing</title>
-    <style>
-      html, body {
-        margin: 0;
-        height: 100%;
-        overflow: hidden;
-        background-color: black;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EXIST Landing</title>
 
-      .video-container {
-        position: relative;
-        width: 100vw;
-        height: 100vh;
-        overflow: hidden;
-      }
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: 'FONTSPRING DEMO - Integral CF Medium', sans-serif;
+      background: black;
+    }
 
-      video {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        object-fit: cover;
-        z-index: 1;
-      }
+    video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: 0;
+    }
 
-      .typing-container {
-        position: absolute;
-        top: 5%;
-        right: 5%;
-        z-index: 2;
-        max-width: 90%;
-        color: #78091b;
-        font-size: clamp(1.2rem, 3vw, 2.5rem);
-        font-family: 'FONTSPRING DEMO - Integral CF Medium', sans-serif;
-      }
+    #hero-type {
+      position: absolute;
+      top: 10%;
+      right: 5%;
+      color: #78091b;
+      font-size: 2.5rem;
+      max-width: 600px;
+      padding: 1rem;
+      z-index: 1;
+    }
 
-      #hero-type::after {
-        content: '|';
-        animation: blink 1s step-end infinite;
-        font-weight: 300;
-        color: #78091b;
-        margin-left: 4px;
-      }
+    #hero-type::after {
+      content: '|';
+      animation: blink 1s step-end infinite;
+      font-weight: 300;
+      color: #78091b;
+      margin-left: 4px;
+    }
 
-      @keyframes blink {
-        50% { opacity: 0; }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="video-container">
-      <video autoplay muted loop playsinline>
-        <source src="existLandingEx.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
 
-      <div class="typing-container">
-        <div id="hero-type"></div>
-      </div>
-    </div>
+  <!-- ✅ Background Video -->
+  <video
+    autoplay
+    muted
+    loop
+    playsinline
+    preload="auto"
+    src="https://res.cloudinary.com/dicgr2srv/video/upload/v1750803048/existLandingEx_an6flp.mp4"
+  ></video>
 
-    <script src="https://unpkg.com/theaterjs@latest/dist/theater.min.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const container = document.getElementById('hero-type');
-        if (!container || !window.theaterJS) return;
+  <!-- ✅ Typing Container -->
+  <div id="hero-type"></div>
 
-        const startTyping = () => {
-          container.textContent = '';
-          const theater = window.theaterJS();
+  <!-- ✅ Theater.js + Typing Logic -->
+  <script>
+    window.onload = () => {
+      const loadTyping = () => {
+        if (!window.theaterJS || !document.getElementById("hero-type")) return;
 
-          theater
-            .addActor('hero-type', {
-              speed: 0.9,
-              accuracy: 0.97,
-              element: container,
-            })
-            .addScene('hero-type:EXIST to evolve', 1000)
-            .addScene('hero-type:evolve to EXIST', 1000)
-            .addScene('hero-type:coming soon', 1000)
-            .addScene('hero-type:', 1000)
-            .addScene(startTyping)
-            .play();
-        };
+        const container = document.getElementById("hero-type");
+        container.textContent = ""; // Clear before each loop
 
-        startTyping();
-      });
-    </script>
-  </body>
+        const theater = window.theaterJS();
+        theater
+          .addActor("hero-type", {
+            speed: 0.9,
+            accuracy: 0.97,
+            element: container
+          })
+          .addScene("hero-type:EXIST to evolve", 1000)
+          .addScene("hero-type:evolve to EXIST", 1000)
+          .addScene("hero-type:coming soon", 1000)
+          .addScene("hero-type:", 1000)
+          .addScene(() => loadTyping()) // 🔁 Loop
+          .play();
+      };
+
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
+      script.onload = loadTyping;
+      document.body.appendChild(script);
+    };
+  </script>
+</body>
 </html>
