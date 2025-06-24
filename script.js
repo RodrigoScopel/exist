@@ -92,7 +92,17 @@ window.addEventListener('scroll', () => {
   const clamped = Math.max(0, Math.min(scrollEnd, scrollY));
   const progress = clamped / scrollEnd;
   const frameIndex = Math.min(totalFrames - 1, Math.floor(progress * totalFrames));
-
+  if (frameIndex === 0) {
+    // Show video, hide canvas
+    canvas.style.display = 'none';
+    video.style.display = 'block';
+  } else {
+    // Hide video, show canvas
+    video.pause();
+    video.style.display = 'none';
+    canvas.style.display = 'block';
+    // Then draw your frame image...
+  }
   drawFrame(frameIndex);
 });
 
