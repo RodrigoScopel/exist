@@ -3,16 +3,14 @@ const ctx = canvas.getContext('2d');
 const video = document.getElementById('introVideo');
 
 const totalFrames = 585;
-const videoFrameCount = 90;
-const scrollEnd = 1000;  // Adjust as needed for desired scroll length
-
+const scrollEnd = 1000;  // Adjust as needed
 let lastFrameIndex = -1;
 
 function drawFrame(index) {
   if (index === lastFrameIndex) return;
 
   if (index === 0) {
-    // Show video, hide canvas
+    // Frame 0 → Show video, hide canvas
     canvas.style.display = 'none';
     video.style.display = 'block';
 
@@ -23,7 +21,7 @@ function drawFrame(index) {
 
     const playPromise = video.play();
     if (playPromise !== undefined) {
-      playPromise.catch(error => {
+      playPromise.catch((error) => {
         console.warn('Video autoplay blocked:', error);
       });
     }
@@ -32,23 +30,16 @@ function drawFrame(index) {
     return;
   }
 
-  // Frames > 0 → Show canvas, hide video
+  // For all other frames → Show canvas, hide video
   if (video) {
     video.pause();
     video.style.display = 'none';
   }
   canvas.style.display = 'block';
 
-  // Lazy-load frame
   const img = new Image();
-  let imgSrc = "";
-
-  if (index < videoFrameCount) {
-    const frameNumber = String(index).padStart(3, "0");
-    imgSrc = `https://raw.githubusercontent.com/RodrigoScopel/exist/main/videoFrames/existLandingEx${frameNumber}.png`;
-  } else {
-    imgSrc = `https://raw.githubusercontent.com/RodrigoScopel/exist/main/existLanding.0.${index}.png`;
-  }
+  const frameNumber = index;  // Now starts from 1 onwards
+  img.src = `https://raw.githubusercontent.com/RodrigoScopel/exist/main/existLanding.0.${frameNumber}.png`;
 
   img.onload = () => {
     ctx.clearRect(0, 0, 1920, 1080);
@@ -75,10 +66,9 @@ function drawFrame(index) {
   };
 
   img.onerror = () => {
-    console.warn(`❌ Failed to load frame ${index}: ${imgSrc}`);
+    console.warn(`❌ Failed to load frame ${index}: ${img.src}`);
   };
 
-  img.src = imgSrc;
   lastFrameIndex = index;
 }
 
