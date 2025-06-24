@@ -4,19 +4,14 @@
     <meta charset="UTF-8" />
     <title>EXIST Landing</title>
     <style>
-      * {
+      html,
+      body {
         margin: 0;
         padding: 0;
-        box-sizing: border-box;
-      }
-
-      body,
-      html {
-        width: 100%;
         height: 100%;
         overflow: hidden;
-        background-color: black;
         font-family: 'FONTSPRING DEMO - Integral CF Medium', sans-serif;
+        background-color: black;
       }
 
       .video-container {
@@ -28,12 +23,11 @@
 
       video {
         position: absolute;
-        top: 0%;
-        left: 0%;
-        min-width: 100%;
-        min-height: 100%;
-        transform: translate(0%, 0%);
-        object-fit: cover;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Makes sure it fills and crops proportionally */
         z-index: 1;
       }
 
@@ -41,13 +35,13 @@
         position: absolute;
         top: 5%;
         right: 5%;
-        max-width: 40%;
-        font-size: 2.2rem;
-        line-height: 1.3;
+        max-width: 90%;
         color: #78091b;
+        font-size: clamp(1.2rem, 3vw, 2.5rem);
+        line-height: 1.3;
+        text-align: right;
         z-index: 2;
         padding: 1rem;
-        text-align: right;
       }
 
       #hero-type::after {
@@ -55,7 +49,7 @@
         animation: blink 1s step-end infinite;
         font-weight: 300;
         color: #78091b;
-        margin-left: 5px;
+        margin-left: 4px;
       }
 
       @keyframes blink {
@@ -69,7 +63,7 @@
   <body>
     <div class="video-container">
       <video autoplay muted loop playsinline>
-        <source src="https://res.cloudinary.com/dicgr2srv/video/upload/v1750803048/existLandingEx_an6flp.mp4" type="video/mp4" />
+        <source src="./existLandingEx.mp4" type="video/mp4" />
         Your browser does not support the video tag.
       </video>
 
@@ -78,14 +72,14 @@
       </div>
     </div>
 
-    <!-- Load Theater.js -->
+    <!-- Theater.js Typing Script -->
     <script src="https://unpkg.com/theaterjs@latest/dist/theater.min.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', () => {
-        const startTyping = () => {
-          const container = document.getElementById('hero-type');
-          if (!container || !window.theaterJS) return;
+        const container = document.getElementById('hero-type');
+        if (!container || !window.theaterJS) return;
 
+        const startTyping = () => {
           container.textContent = '';
           const theater = window.theaterJS();
 
@@ -93,23 +87,17 @@
             .addActor('hero-type', {
               speed: 0.9,
               accuracy: 0.97,
-              element: container
+              element: container,
             })
             .addScene('hero-type:EXIST to evolve', 1000)
             .addScene('hero-type:evolve to EXIST', 1000)
             .addScene('hero-type:coming soon', 1000)
             .addScene('hero-type:', 1000)
-            .addScene(() => {
-              startTyping(); // loop
-            })
+            .addScene(startTyping) // 🔁 Loop
             .play();
         };
 
-        if (window.theaterJS) {
-          startTyping();
-        } else {
-          console.error('❌ TheaterJS failed to load');
-        }
+        startTyping();
       });
     </script>
   </body>
