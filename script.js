@@ -143,3 +143,10 @@ function initTypingAnimation() {
 
 // ✅ Run it after DOM is ready
 document.addEventListener('DOMContentLoaded', initTypingAnimation);
+
+document.addEventListener('DOMContentLoaded', () => {
+  const spacer = document.getElementById('scroll-spacer');
+  if (spacer) {
+    spacer.style.height = `${scrollEnd}px`;  // Makes the page height match your scrollEnd
+  }
+});
