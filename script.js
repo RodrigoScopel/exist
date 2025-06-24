@@ -1,3 +1,18 @@
+document.addEventListener('DOMContentLoaded', () => {
+  const video = document.getElementById('introVideo');
+  if (video) {
+    video.muted = true;
+    video.playsInline = true;
+    video.loop = true;
+    video.autoplay = true;
+
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((error) => console.warn('❌ Video autoplay blocked:', error));
+    }
+  }
+});
+
 const canvas = document.getElementById('scrollCanvas');
 const ctx = canvas.getContext('2d');
 const video = document.getElementById('introVideo');
