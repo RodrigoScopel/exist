@@ -1,13 +1,40 @@
-
-body {
+body, html {
   margin: 0;
-  background-color: black;
-}
-canvas {
+  padding: 0;
+  height: 100%;
   width: 100%;
-  height: auto;
-  display: block;
-  border-radius: 1rem;
-  position: sticky;
+  overflow: hidden;
+  font-family: 'FONTSPRING DEMO - Integral CF Medium', sans-serif;
+}
+
+#bg-video {
+  position: absolute;
   top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+}
+
+#hero-type {
+  position: absolute;
+  top: 10%;
+  right: 5%;
+  font-size: 2.5rem;
+  color: #78091b;
+  max-width: 40%;
+  line-height: 1.2;
+}
+
+#hero-type::after {
+  content: '';
+  animation: blink 1s step-end infinite;
+  font-weight: 300;
+  color: #78091b;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
 }
