@@ -48,26 +48,26 @@
   }
 
   #hero-type {
-  position: absolute;
-  bottom: 10%;
-  right: 5%;
-  color: #78091b;
-  font-size: 2.5rem;
-  max-width: 600px;
-  padding: 1rem;
-  z-index: 1;
-  text-align: left;         /* text flows left to right */
-  direction: ltr;           /* force left-to-right flow */
-  white-space: nowrap;      /* prevents line breaks */
-}
+    position: absolute;
+    bottom: 10%;
+    right: 5%;
+    color: #78091b;
+    font-size: 2.5rem;
+    padding: 1rem;
+    z-index: 1;
+    white-space: nowrap;
+    text-align: left;   /* ensures text flows left-to-right */
+    direction: ltr;     /* forces correct text direction */
+    font-family: 'IntegralCF', sans-serif;
+  }
 
   #hero-type::after {
-    content: '|';
-    animation: blink 1s step-end infinite;
-    font-weight: 300;
-    color: #78091b;
-    margin-left: 4px;
-    display: inline-block;
+  content: '|';
+  animation: blink 1s step-end infinite;
+  font-weight: 300;
+  color: #78091b;
+  margin-left: 4px;
+  display: inline-block;
   }
 
   @keyframes blink {
