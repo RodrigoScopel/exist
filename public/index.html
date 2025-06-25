@@ -47,32 +47,32 @@
     z-index: 0;
   }
 
-  #hero-type {
-    position: absolute;
-    bottom: 10%;
-    right: 5%;
-    color: #78091b;
-    font-size: 2.5rem;
-    padding: 1rem;
-    z-index: 1;
-    white-space: nowrap;
-    text-align: left;   /* ensures text flows left-to-right */
-    direction: ltr;     /* forces correct text direction */
-    font-family: 'IntegralCF', sans-serif;
-  }
-
-  #hero-type::after {
+ #hero-type {
+  position: absolute;
+  bottom: 10%;
+  right: 5%;
+  width: 32ch; /* Adjust this to match your longest sentence */
+  color: #78091b;
+  font-size: 2.5rem;
+  padding: 1rem;
+  z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: left;
+  direction: ltr;
+  font-family: 'IntegralCF', sans-serif;
+}
+#hero-type::after {
   content: '|';
   animation: blink 1s step-end infinite;
   font-weight: 300;
   color: #78091b;
   margin-left: 4px;
   display: inline-block;
-  }
-
-  @keyframes blink {
-    50% { opacity: 0; }
-  }
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
 </style>
 </head>
 <body>
