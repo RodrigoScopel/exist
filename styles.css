@@ -9,6 +9,17 @@
     background: black;
   } */
 
+@font-face {
+  font-family: 'IntegralCF';
+  src: url('/fonts/integralcf-bold.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  font-family: 'IntegralCF', sans-serif;
+}
+
   video {
     position: absolute;
     top: 0;
