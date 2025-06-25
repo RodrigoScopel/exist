@@ -6,62 +6,65 @@
   <title>EXIST Landing</title>
 
   <!-- Local font -->
-  <style>
-    @font-face {
-      font-family: 'Integral CF';
-      src: url('/fonts/integralcf-bold.otf') format('opentype');
-      font-weight: bold;
-      font-style: normal;
-    }
+<style>
+  @font-face {
+    font-family: 'Integral CF';
+    src: url('/fonts/integralcf-bold.otf') format('opentype');
+    font-weight: bold;
+    font-style: normal;
+  }
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-      background: black;
-      overflow: hidden;
-      font-family: 'Integral CF', sans-serif;
-    }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    background: black;
+    overflow: hidden;
+    font-family: 'Integral CF', sans-serif;
+    font-weight: bold;
+  }
 
-    .video-wrapper {
-      height: 100%;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+  .video-wrapper {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
 
-    video {
-      width: 100vw;
-      height: 100vh;
-      object-fit: contain;
-      z-index: 0;
-    }
+  video {
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain;
+    z-index: 0;
+  }
 
-    #hero-type {
-      position: absolute;
-      bottom: 10%;
-      right: 5%;
-      color: #78091b;
-      font-size: 2.5rem;
-      max-width: 600px;
-      padding: 1rem;
-      z-index: 1;
-    }
+  #hero-type {
+    position: absolute;
+    bottom: 10%;
+    right: 5%;
+    color: #78091b;
+    font-size: 2.5rem;
+    max-width: 600px;
+    padding: 1rem;
+    z-index: 1;
+    font-family: 'Integral CF', sans-serif;
+    font-weight: bold;
+  }
 
-    #hero-type::after {
-      content: '|';
-      animation: blink 1s step-end infinite;
-      font-weight: 300;
-      color: #78091b;
-      margin-left: 4px;
-    }
+  #hero-type::after {
+    content: '|';
+    animation: blink 1s step-end infinite;
+    font-weight: 300;
+    color: #78091b;
+    margin-left: 4px;
+  }
 
-    @keyframes blink {
-      50% { opacity: 0; }
-    }
-  </style>
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+</style>
 
   <!-- Height messaging for Squarespace iframe -->
   <script>
