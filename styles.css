@@ -16,9 +16,9 @@
   font-style: normal;
 }
 
-/* body {
-  font-family: 'IntegralCF', sans-serif;
-} */
+body {
+  font-family: 'IntegralCF', Bold;
+}
 
   video {
     position: absolute;
