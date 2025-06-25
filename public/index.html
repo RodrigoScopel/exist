@@ -70,14 +70,13 @@
       50% { opacity: 0; }
     }
 
-    /* Hidden element for measuring width */
     #sizer {
       visibility: hidden;
       position: absolute;
       white-space: nowrap;
       font-size: 2.5rem;
       font-family: 'Integral CF', sans-serif;
-      padding: 1rem;
+      padding: 6rem;
     }
   </style>
 </head>
@@ -97,42 +96,41 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const sentences = [
+      const span = document.querySelector("#hero-type span");
+      const heroType = document.getElementById("hero-type");
+      const sizer = document.getElementById("sizer");
+
+      if (!span || !heroType || !sizer) return;
+
+      const lines = [
         "EXIST to evolve",
         "evolve to EXIST",
         "coming soon",
         ""
       ];
 
-      // Measure max sentence width
-      const sizer = document.getElementById("sizer");
-      const heroType = document.getElementById("hero-type");
-      const span = document.querySelector("#hero-type span");
-
-      if (!sizer || !heroType || !span) return;
-
-      let maxWidth = 0;
-      sentences.forEach(text => {
-        sizer.textContent = text;
-        const width = sizer.offsetWidth;
-        if (width > maxWidth) maxWidth = width;
-      });
-
-      // Set fixed width based on longest line
-      heroType.style.width = `${maxWidth}px`;
-
       const startTyping = () => {
         span.textContent = "";
+
         const theater = window.theaterJS();
+        theater.addActor("hero-type", {
+          speed: 0.9,
+          accuracy: 0.97,
+          element: span
+        });
+
+        // For each line, resize the box and animate the text
+        lines.forEach((line, i) => {
+          theater.addScene(() => {
+            sizer.textContent = line;
+            const width = sizer.offsetWidth;
+            heroType.style.width = `${width}px`;
+          });
+          theater.addScene(`hero-type:${line}`, 1000);
+        });
+
+        // Restart
         theater
-          .addActor("hero-type", {
-            speed: 0.9,
-            accuracy: 0.97,
-            element: span
-          })
-          .addScene("hero-type:EXIST to evolve", 1000)
-          .addScene("hero-type:evolve to EXIST", 1000)
-          .addScene("hero-type:coming soon", 1000)
           .addScene("hero-type:", 1000)
           .addScene(() => startTyping())
           .play();
