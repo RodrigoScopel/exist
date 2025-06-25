@@ -39,39 +39,32 @@
       object-fit: contain;
     }
 
-      #hero-type {
-    position: absolute;
-    bottom: 10%;
-    right: 5%;
-    max-width: 32ch;         /* Fixed width for consistent cursor position */
-    width: 100%;
-    color: #78091b;
-    font-size: 2.5rem;
-    padding: 1rem;
-    z-index: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-align: left;        /* Text flows left to right */
-    direction: ltr;
-    font-family: 'Integral CF', sans-serif;
-    display: flex;
-    justify-content: flex-end; /* Align box to right within its own space */
-  }
-  #hero-type span {
-    display: inline-block;
-  }
-  
-  #hero-type::after {
-    content: '|';
-    animation: blink 1s step-end infinite;
-    font-weight: 300;
-    color: #78091b;
-    margin-left: 4px;
-    display: inline-block;
-  }
-  @keyframes blink {
-    50% { opacity: 0; }
-  }
+#hero-type {
+  position: absolute;
+  bottom: 10%;
+  right: 5%;
+  width: 32ch; /* Adjust this to match your longest sentence */
+  color: #78091b;
+  font-size: 2.5rem;
+  padding: 1rem;
+  z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: left;
+  direction: ltr;
+  font-family: 'IntegralCF', sans-serif;
+}
+#hero-type::after {
+  content: '|';
+  animation: blink 1s step-end infinite;
+  font-weight: 300;
+  color: #78091b;
+  margin-left: 4px;
+  display: inline-block;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
   </style>
 </head>
 <body>
