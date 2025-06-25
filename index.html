@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script>
-  function sendHeightToParent() {
-    const height = document.body.scrollHeight;
-    window.parent.postMessage({ type: "iframeHeight", height }, "*");
-  }
-
-  window.addEventListener("load", sendHeightToParent);
-  window.addEventListener("resize", sendHeightToParent);
-</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EXIST Landing</title>
+
+  <!-- Local font -->
   <style>
-/*     html, body {
+    @font-face {
+      font-family: 'IntegralCF';
+      src: url('/fonts/integralcf-bold.otf') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    html, body {
       margin: 0;
       padding: 0;
       height: 100%;
@@ -22,7 +22,7 @@
       background: black;
       overflow: hidden;
       font-family: 'Integral CF', Bold;
-    } */
+    }
 
     .video-wrapper {
       height: 100%;
@@ -56,12 +56,22 @@
       font-weight: 300;
       color: #78091b;
       margin-left: 4px;
-    } */
+    }
 
-/*     @keyframes blink {
+    @keyframes blink {
       50% { opacity: 0; }
     }
   </style>
+
+  <!-- Height messaging for Squarespace iframe -->
+  <script>
+    function sendHeightToParent() {
+      const height = document.body.scrollHeight;
+      window.parent.postMessage({ type: "iframeHeight", height }, "*");
+    }
+    window.addEventListener("load", sendHeightToParent);
+    window.addEventListener("resize", sendHeightToParent);
+  </script>
 </head>
 <body>
   <div class="video-wrapper">
