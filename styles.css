@@ -9,7 +9,7 @@
     background: black;
   } */
 
-@font-face {
+/* @font-face {
   font-family: 'IntegralCF';
   src: url('/fonts/integralcf-bold.otf') format('opentype');
   font-weight: normal;
@@ -18,7 +18,7 @@
 
 body {
   font-family: 'IntegralCF', Bold;
-}
+} */
 
   video {
     position: absolute;
