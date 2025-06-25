@@ -95,47 +95,45 @@
   <div id="sizer"></div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    const lines = [
+      "EXIST to evolve",
+      "evolve to EXIST",
+      "coming soon",
+      ""
+    ];
+
+    function startTyping() {
       const span = document.querySelector("#hero-type span");
       const heroType = document.getElementById("hero-type");
       const sizer = document.getElementById("sizer");
 
       if (!span || !heroType || !sizer) return;
 
-      const lines = [
-        "EXIST to evolve",
-        "evolve to EXIST",
-        "coming soon",
-        ""
-      ];
+      span.textContent = "";
 
-      const startTyping = () => {
-        span.textContent = "";
+      const theater = window.theaterJS();
+      theater.addActor("hero-type", {
+        speed: 0.9,
+        accuracy: 0.97,
+        element: span
+      });
 
-        const theater = window.theaterJS();
-        theater.addActor("hero-type", {
-          speed: 0.9,
-          accuracy: 0.97,
-          element: span
+      lines.forEach(line => {
+        theater.addScene(() => {
+          sizer.textContent = line;
+          const width = sizer.offsetWidth;
+          heroType.style.width = `${width}px`;
         });
+        theater.addScene(`hero-type:${line}`, 1000);
+      });
 
-        // For each line, resize the box and animate the text
-        lines.forEach((line, i) => {
-          theater.addScene(() => {
-            sizer.textContent = line;
-            const width = sizer.offsetWidth;
-            heroType.style.width = `${width}px`;
-          });
-          theater.addScene(`hero-type:${line}`, 1000);
-        });
+      theater
+        .addScene("hero-type:", 1000)
+        .addScene(() => startTyping()) // loop
+        .play();
+    }
 
-        // Restart
-        theater
-          .addScene("hero-type:", 1000)
-          .addScene(() => startTyping())
-          .play();
-      };
-
+    document.addEventListener("DOMContentLoaded", () => {
       if (!window.theaterJS) {
         const script = document.createElement("script");
         script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
