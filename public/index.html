@@ -14,54 +14,64 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EXIST Landing</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-      background: black;
-      overflow: hidden;
-      font-family: 'Integral CF', Bold;
-    }
+  @font-face {
+    font-family: 'Integral CF';
+    src: url('/fonts/integralcf-bold.otf') format('opentype');
+    font-weight: bold;
+    font-style: normal;
+  }
 
-    .video-wrapper {
-      height: 100%;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    background: black;
+    overflow: hidden;
+    font-family: 'Integral CF', sans-serif;
+    font-weight: bold;
+  }
 
-    video {
-      width: 100vw;
-      height: 100vh;
-      object-fit: contain;
-      z-index: 0;
-    }
+  .video-wrapper {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
 
-    #hero-type {
-      position: absolute;
-      bottom: 10%;
-      right: 5%;
-      color: #78091b;
-      font-size: 2.5rem;
-      max-width: 600px;
-      padding: 1rem;
-      z-index: 1;
-    }
+  video {
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain;
+    z-index: 0;
+  }
 
-    #hero-type::after {
-      content: '|';
-      animation: blink 1s step-end infinite;
-      font-weight: 300;
-      color: #78091b;
-      margin-left: 4px;
-    } */
+  #hero-type {
+    position: absolute;
+    bottom: 10%;
+    right: 5%;
+    color: #78091b;
+    font-size: 2.5rem;
+    max-width: 600px;
+    padding: 1rem;
+    z-index: 1;
+    font-family: 'Integral CF', sans-serif;
+    font-weight: bold;
+  }
 
-/*     @keyframes blink {
-      50% { opacity: 0; }
-    }
-  </style>
+  #hero-type::after {
+    content: '|';
+    animation: blink 1s step-end infinite;
+    font-weight: 300;
+    color: #78091b;
+    margin-left: 4px;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+</style>
 </head>
 <body>
   <div class="video-wrapper">
