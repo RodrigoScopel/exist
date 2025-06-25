@@ -1,86 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script>
-  function sendHeightToParent() {
-    const height = document.body.scrollHeight;
-    window.parent.postMessage({ type: "iframeHeight", height }, "*");
-  }
-
-  window.addEventListener("load", sendHeightToParent);
-  window.addEventListener("resize", sendHeightToParent);
-</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EXIST Landing</title>
+
+  <!-- Custom Font -->
   <style>
-  @font-face {
-    font-family: 'Integral CF';
-    src: url('/fonts/integralcf-bold.otf') format('opentype');
-    font-weight: bold;
-    font-style: normal;
-  }
+    @font-face {
+      font-family: 'IntegralCF';
+      src: url('/fonts/integralcf-bold.otf') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+    }
 
-  html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    width: 100%;
-    background: black;
-    overflow: hidden;
-    font-family: 'Integral CF', sans-serif;
-    font-weight: bold;
-  }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background: black;
+      overflow: hidden;
+      font-family: 'IntegralCF', sans-serif;
+    }
 
-  .video-wrapper {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+    .video-wrapper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      z-index: 0;
+    }
 
-  video {
-    width: 100vw;
-    height: 100vh;
-    object-fit: contain;
-    z-index: 0;
-  }
+    video {
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain;
+    }
 
- #hero-type {
-  position: absolute;
-  bottom: 10%;
-  right: 5%;
-  max-width: 32ch;         /* Fixed width for consistent cursor position */
-  width: 100%;
-  color: #78091b;
-  font-size: 2.5rem;
-  padding: 1rem;
-  z-index: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-align: left;        /* Text flows left to right */
-  direction: ltr;
-  font-family: 'IntegralCF', sans-serif;
-  display: flex;
-  justify-content: flex-end; /* Align box to right within its own space */
-}
-#hero-type span {
-  display: inline-block;
-}
+    #hero-type {
+      position: absolute;
+      bottom: 10%;
+      right: 5%;
+      max-width: 32ch;
+      width: 100%;
+      color: #78091b;
+      font-size: 2.5rem;
+      padding: 1rem;
+      z-index: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-align: left;
+      direction: ltr;
+      display: flex;
+      justify-content: flex-end;
+    }
 
-#hero-type::after {
-  content: '|';
-  animation: blink 1s step-end infinite;
-  font-weight: 300;
-  color: #78091b;
-  margin-left: 4px;
-  display: inline-block;
-}
-@keyframes blink {
-  50% { opacity: 0; }
-}
-</style>
+    #hero-type span {
+      display: inline-block;
+    }
+
+    #hero-type::after {
+      content: '|';
+      animation: blink 1s step-end infinite;
+      font-weight: 300;
+      color: #78091b;
+      margin-left: 4px;
+      display: inline-block;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+  </style>
 </head>
 <body>
   <div class="video-wrapper">
@@ -92,29 +85,31 @@
       src="https://res.cloudinary.com/dicgr2srv/video/upload/v1750803048/existLandingEx_an6flp.mp4">
     </video>
   </div>
-  <div id="hero-type"></div>
 
+  <div id="hero-type"><span></span></div>
+
+  <!-- Typing Animation Script -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const startTyping = () => {
-        if (!window.theaterJS || !document.getElementById("hero-type")) return;
+        const span = document.querySelector("#hero-type span");
+        if (!window.theaterJS || !span) return;
 
-        const heroType = document.getElementById("hero-type");
-        heroType.textContent = "";
+        span.textContent = "";
 
         const theater = window.theaterJS();
         theater
           .addActor("hero-type", {
             speed: 0.9,
             accuracy: 0.97,
-            element: heroType
+            element: span
           })
           .addScene("hero-type:EXIST to evolve", 1000)
           .addScene("hero-type:evolve to EXIST", 1000)
           .addScene("hero-type:coming soon", 1000)
           .addScene("hero-type:", 1000)
           .addScene(() => {
-            startTyping();
+            startTyping(); // loop
           })
           .play();
       };
