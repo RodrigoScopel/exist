@@ -1,11 +1,44 @@
+<style>
+/*   html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    font-family: 'Integral CF', Bold;
+    background: black;
+  } */
 
-body {
-  margin: 0;
-  background-color: black;
-}
-canvas {
-  width: 100%;
-  height: auto;
-  display: block;
-  border-radius: 1rem;
-}
+  video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: 0; /* ✅ Set to 0 so it's visible behind the text but above background */
+  }
+
+  #hero-type {
+    position: absolute;
+    top: 10%;
+    right: 5%;
+    color: #78091b;
+    font-size: 2.5rem;
+    max-width: 600px;
+    padding: 1rem;
+    z-index: 1;
+  }
+
+  #hero-type::after {
+    content: '|';
+    animation: blink 1s step-end infinite;
+    font-weight: 300;
+    color: #78091b;
+    margin-left: 4px;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+</style>
