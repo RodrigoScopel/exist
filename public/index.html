@@ -48,20 +48,17 @@
   }
 
   #hero-type {
-    position: absolute;
-    bottom: 10%;
-    right: 5%;
-    text-align: right; /* <-- important for flow direction */
-    direction: rtl;    /* <-- ensures left-to-right typing */
-    color: #78091b;
-    font-size: 2.5rem;
-    max-width: 600px;
-    padding: 1rem;
-    z-index: 1;
-    font-family: 'Integral CF', sans-serif;
-    font-weight: bold;
-  }
-
+  position: absolute;
+  bottom: 10%;
+  right: 5%;
+  color: #78091b;
+  font-size: 2.5rem;
+  max-width: 600px;
+  padding: 1rem;
+  z-index: 1;
+  text-align: left;         /* text flows left to right */
+  direction: ltr;           /* force left-to-right flow */
+  white-space: nowrap;      /* prevents line breaks */
 }
 
   #hero-type::after {
@@ -70,8 +67,7 @@
     font-weight: 300;
     color: #78091b;
     margin-left: 4px;
-    display: inline-block; /* <--- Ensures it's treated like a typing cursor */
-    vertical-align: bottom; /* Optional: keeps it aligned with text baseline */
+    display: inline-block;
   }
 
   @keyframes blink {
