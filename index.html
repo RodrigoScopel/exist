@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EXIST Landing</title>
 
-  <!-- 👇 FONT FACE GOES HERE -->
+  <!-- Local font -->
   <style>
     @font-face {
       font-family: 'Integral CF';
@@ -63,7 +63,7 @@
     }
   </style>
 
-  <!-- iframe resize helper for Squarespace -->
+  <!-- Height messaging for Squarespace iframe -->
   <script>
     function sendHeightToParent() {
       const height = document.body.scrollHeight;
@@ -73,3 +73,55 @@
     window.addEventListener("resize", sendHeightToParent);
   </script>
 </head>
+
+<body>
+  <div class="video-wrapper">
+    <video
+      autoplay
+      muted
+      loop
+      playsinline
+      src="https://res.cloudinary.com/dicgr2srv/video/upload/v1750803048/existLandingEx_an6flp.mp4">
+    </video>
+  </div>
+
+  <div id="hero-type"></div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const startTyping = () => {
+        if (!window.theaterJS || !document.getElementById("hero-type")) return;
+
+        const heroType = document.getElementById("hero-type");
+        heroType.textContent = "";
+
+        const theater = window.theaterJS();
+        theater
+          .addActor("hero-type", {
+            speed: 0.9,
+            accuracy: 0.97,
+            element: heroType
+          })
+          .addScene("hero-type:EXIST to evolve", 1000)
+          .addScene("hero-type:evolve to EXIST", 1000)
+          .addScene("hero-type:coming soon", 1000)
+          .addScene("hero-type:", 1000)
+          .addScene(() => {
+            startTyping();
+          })
+          .play();
+      };
+
+      if (!window.theaterJS) {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
+        script.async = true;
+        script.onload = startTyping;
+        document.body.appendChild(script);
+      } else {
+        startTyping();
+      }
+    });
+  </script>
+</body>
+</html>
