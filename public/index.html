@@ -70,7 +70,6 @@
       50% { opacity: 0; }
     }
 
-    /* Hidden element for measuring width */
     #sizer {
       visibility: hidden;
       position: absolute;
@@ -104,7 +103,6 @@
         ""
       ];
 
-      // Measure max sentence width
       const sizer = document.getElementById("sizer");
       const heroType = document.getElementById("hero-type");
       const span = document.querySelector("#hero-type span");
@@ -118,8 +116,7 @@
         if (width > maxWidth) maxWidth = width;
       });
 
-      // Set fixed width based on longest line
-      heroType.style.width = ${maxWidth}px;
+      heroType.style.width = `${maxWidth}px`;
 
       const startTyping = () => {
         span.textContent = "";
