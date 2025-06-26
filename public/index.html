@@ -48,7 +48,7 @@
       z-index: 1;
       white-space: nowrap;
       overflow: hidden;
-      text-align: left;
+      text-align: end;
       direction: ltr;
       font-family: 'Integral CF', sans-serif;
     }
@@ -99,7 +99,7 @@
       const sentences = [
         "EXIST to evolve",
         "evolve to EXIST",
-        "coming soon",
+        "...arriving",
         ""
       ];
 
@@ -129,7 +129,7 @@
           })
           .addScene("hero-type:EXIST to evolve", 1000)
           .addScene("hero-type:evolve to EXIST", 1000)
-          .addScene("hero-type:coming soon", 1000)
+          .addScene("hero-type:...arriving", 2000)
           .addScene("hero-type:", 1000)
           .addScene(() => startTyping())
           .play();
