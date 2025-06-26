@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EXIST Landing</title>
 
+  <!-- Font and Global Styles -->
   <style>
     @font-face {
       font-family: 'Integral CF';
@@ -16,8 +17,8 @@
     html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
       width: 100%;
+      height: 100%;
       background: black;
       overflow: hidden;
       font-family: 'Integral CF', sans-serif;
@@ -27,14 +28,14 @@
       position: fixed;
       top: 0;
       left: 0;
-      height: 100%;
       width: 100%;
+      height: 100%;
       z-index: 0;
     }
 
     video {
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       object-fit: contain;
     }
 
@@ -44,14 +45,12 @@
       right: 5%;
       color: #78091b;
       font-size: 2.5rem;
-      padding: 6rem;
+      padding: 1rem;
       z-index: 1;
       white-space: nowrap;
       overflow: hidden;
       text-align: left;
       direction: ltr;
-      font-family: 'Integral CF', sans-serif;
-      transition: width 0.3s ease;
     }
 
     #hero-type span {
@@ -64,7 +63,6 @@
       font-weight: 300;
       color: #78091b;
       margin-left: 4px;
-      display: inline-block;
     }
 
     @keyframes blink {
@@ -77,24 +75,22 @@
       white-space: nowrap;
       font-size: 2.5rem;
       font-family: 'Integral CF', sans-serif;
-      padding: 1rem;
     }
   </style>
 </head>
 <body>
+  <!-- Background Video -->
   <div class="video-wrapper">
-    <video
-      autoplay
-      muted
-      loop
-      playsinline
+    <video autoplay muted loop playsinline
       src="https://res.cloudinary.com/dicgr2srv/video/upload/v1750803048/existLandingEx_an6flp.mp4">
     </video>
   </div>
 
+  <!-- Typing Text + Width Calculator -->
   <div id="hero-type"><span></span></div>
   <div id="sizer"></div>
 
+  <!-- Theater.js Typing Animation -->
   <script>
     const sentences = [
       "EXIST to evolve",
@@ -103,45 +99,39 @@
       ""
     ];
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const sizer = document.getElementById("sizer");
+    function startTyping() {
       const heroType = document.getElementById("hero-type");
-      const span = document.querySelector("#hero-type span");
+      const sizer = document.getElementById("sizer");
+      const span = heroType.querySelector("span");
 
-      if (!sizer || !heroType || !span) return;
+      const theater = window.theaterJS();
+      theater.addActor("hero-type", {
+        speed: 0.9,
+        accuracy: 0.97,
+        element: span
+      });
 
-      const setupTheater = () => {
-        const theater = window.theaterJS();
-        theater.addActor("hero-type", {
-          speed: 0.9,
-          accuracy: 0.97,
-          element: span
-        });
-
-        const queueScenes = () => {
-          sentences.forEach(text => {
-            theater.addScene(() => {
-              sizer.textContent = text;
-              heroType.style.width = `${sizer.offsetWidth}px`;
-            });
-            theater.addScene(`hero-type:${text}`, 1000);
+      function queueScenes() {
+        sentences.forEach(text => {
+          theater.addScene(() => {
+            sizer.textContent = text;
+            heroType.style.width = sizer.offsetWidth + "px";
           });
-          theater.addScene(queueScenes); // loop
-        };
-
-        queueScenes();
-        theater.play();
-      };
-
-      if (!window.theaterJS) {
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
-        script.async = true;
-        script.onload = setupTheater;
-        document.body.appendChild(script);
-      } else {
-        setupTheater();
+          theater.addScene("hero-type:" + text, 1000);
+        });
+        theater.addScene(queueScenes); // loop
       }
+
+      queueScenes();
+      theater.play();
+    }
+
+    // Load Theater.js
+    window.addEventListener("DOMContentLoaded", () => {
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
+      script.onload = startTyping;
+      document.body.appendChild(script);
     });
   </script>
 </body>
