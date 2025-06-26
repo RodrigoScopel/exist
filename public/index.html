@@ -51,6 +51,7 @@
       text-align: left;
       direction: ltr;
       font-family: 'Integral CF', sans-serif;
+      transition: width 0.3s ease;
     }
 
     #hero-type span {
@@ -99,7 +100,7 @@
       const sentences = [
         "EXIST to evolve",
         "evolve to EXIST",
-        "ARRIVING",
+        "coming soon",
         ""
       ];
 
@@ -109,30 +110,34 @@
 
       if (!sizer || !heroType || !span) return;
 
-      let maxWidth = 0;
-      sentences.forEach(text => {
-        sizer.textContent = text;
-        const width = sizer.offsetWidth;
-        if (width > maxWidth) maxWidth = width;
+      const theater = window.theaterJS();
+
+      theater.addActor("hero-type", {
+        speed: 0.9,
+        accuracy: 0.97,
+        element: span
       });
 
-      heroType.style.width = `${maxWidth}px`;
+      const addSceneWithSizer = (text, pause) => {
+        theater.addScene(() => {
+          sizer.textContent = text;
+          heroType.style.width = `${sizer.offsetWidth}px`;
+        });
+        theater.addScene(`hero-type:${text}`, pause);
+      };
+
+      const loopScenes = () => {
+        addSceneWithSizer("EXIST to evolve", 1000);
+        addSceneWithSizer("evolve to EXIST", 1000);
+        addSceneWithSizer("coming soon", 1000);
+        addSceneWithSizer("", 1000);
+        theater.addScene(loopScenes); // loop
+      };
 
       const startTyping = () => {
         span.textContent = "";
-        const theater = window.theaterJS();
-        theater
-          .addActor("hero-type", {
-            speed: 0.9,
-            accuracy: 0.97,
-            element: span
-          })
-          .addScene("hero-type:EXIST to evolve", 1000)
-          .addScene("hero-type:evolve to EXIST", 1000)
-          .addScene("hero-type:ARRIVING", 1000)
-          .addScene("hero-type:", 1000)
-          .addScene(() => startTyping())
-          .play();
+        loopScenes();
+        theater.play();
       };
 
       if (!window.theaterJS) {
