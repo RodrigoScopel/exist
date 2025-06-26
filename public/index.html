@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EXIST Landing</title>
 
-  <!-- Font and Global Styles -->
   <style>
     @font-face {
       font-family: 'Integral CF';
@@ -17,8 +16,8 @@
     html, body {
       margin: 0;
       padding: 0;
-      width: 100%;
       height: 100%;
+      width: 100%;
       background: black;
       overflow: hidden;
       font-family: 'Integral CF', sans-serif;
@@ -28,14 +27,14 @@
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
       height: 100%;
+      width: 100%;
       z-index: 0;
     }
 
     video {
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       object-fit: contain;
     }
 
@@ -45,12 +44,13 @@
       right: 5%;
       color: #78091b;
       font-size: 2.5rem;
-      padding: 1rem;
+      padding: 6rem;
       z-index: 1;
       white-space: nowrap;
       overflow: hidden;
       text-align: left;
       direction: ltr;
+      font-family: 'Integral CF', sans-serif;
     }
 
     #hero-type span {
@@ -63,6 +63,7 @@
       font-weight: 300;
       color: #78091b;
       margin-left: 4px;
+      display: inline-block;
     }
 
     @keyframes blink {
@@ -75,63 +76,75 @@
       white-space: nowrap;
       font-size: 2.5rem;
       font-family: 'Integral CF', sans-serif;
+      padding: 1rem;
     }
   </style>
 </head>
 <body>
-  <!-- Background Video -->
   <div class="video-wrapper">
-    <video autoplay muted loop playsinline
+    <video
+      autoplay
+      muted
+      loop
+      playsinline
       src="https://res.cloudinary.com/dicgr2srv/video/upload/v1750803048/existLandingEx_an6flp.mp4">
     </video>
   </div>
 
-  <!-- Typing Text + Width Calculator -->
   <div id="hero-type"><span></span></div>
   <div id="sizer"></div>
 
-  <!-- Theater.js Typing Animation -->
   <script>
-    const sentences = [
-      "EXIST to evolve",
-      "evolve to EXIST",
-      "coming soon",
-      ""
-    ];
+    document.addEventListener("DOMContentLoaded", () => {
+      const sentences = [
+        "EXIST to evolve",
+        "evolve to EXIST",
+        "coming soon",
+        ""
+      ];
 
-    function startTyping() {
-      const heroType = document.getElementById("hero-type");
       const sizer = document.getElementById("sizer");
+      const heroType = document.getElementById("hero-type");
       const span = heroType.querySelector("span");
 
-      const theater = window.theaterJS();
-      theater.addActor("hero-type", {
-        speed: 0.9,
-        accuracy: 0.97,
-        element: span
+      if (!sizer || !heroType || !span) return;
+
+      // Measure max width
+      let maxWidth = 0;
+      sentences.forEach(text => {
+        sizer.textContent = text;
+        const width = sizer.offsetWidth;
+        if (width > maxWidth) maxWidth = width;
       });
 
-      function queueScenes() {
-        sentences.forEach(text => {
-          theater.addScene(() => {
-            sizer.textContent = text;
-            heroType.style.width = sizer.offsetWidth + "px";
-          });
-          theater.addScene("hero-type:" + text, 1000);
-        });
-        theater.addScene(queueScenes); // loop
+      heroType.style.width = `${maxWidth}px`;
+
+      const startTyping = () => {
+        span.textContent = "";
+        const theater = window.theaterJS();
+        theater
+          .addActor("hero-type", {
+            speed: 0.9,
+            accuracy: 0.97,
+            element: span
+          })
+          .addScene("hero-type:EXIST to evolve", 1000)
+          .addScene("hero-type:evolve to EXIST", 1000)
+          .addScene("hero-type:coming soon", 1000)
+          .addScene("hero-type:", 1000)
+          .addScene(() => startTyping()) // Loop
+          .play();
+      };
+
+      if (!window.theaterJS) {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
+        script.async = true;
+        script.onload = startTyping;
+        document.body.appendChild(script);
+      } else {
+        startTyping();
       }
-
-      queueScenes();
-      theater.play();
-    }
-
-    // Load Theater.js
-    window.addEventListener("DOMContentLoaded", () => {
-      const script = document.createElement("script");
-      script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
-      script.onload = startTyping;
-      document.body.appendChild(script);
     });
   </script>
 </body>
