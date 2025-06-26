@@ -96,47 +96,40 @@
   <div id="sizer"></div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const sentences = [
-        "EXIST to evolve",
-        "evolve to EXIST",
-        "coming soon",
-        ""
-      ];
+    const sentences = [
+      "EXIST to evolve",
+      "evolve to EXIST",
+      "coming soon",
+      ""
+    ];
 
+    document.addEventListener("DOMContentLoaded", () => {
       const sizer = document.getElementById("sizer");
       const heroType = document.getElementById("hero-type");
       const span = document.querySelector("#hero-type span");
 
       if (!sizer || !heroType || !span) return;
 
-      const theater = window.theaterJS();
-
-      theater.addActor("hero-type", {
-        speed: 0.9,
-        accuracy: 0.97,
-        element: span
-      });
-
-      const addSceneWithSizer = (text, pause) => {
-        theater.addScene(() => {
-          sizer.textContent = text;
-          heroType.style.width = `${sizer.offsetWidth}px`;
+      const setupTheater = () => {
+        const theater = window.theaterJS();
+        theater.addActor("hero-type", {
+          speed: 0.9,
+          accuracy: 0.97,
+          element: span
         });
-        theater.addScene(`hero-type:${text}`, pause);
-      };
 
-      const loopScenes = () => {
-        addSceneWithSizer("EXIST to evolve", 1000);
-        addSceneWithSizer("evolve to EXIST", 1000);
-        addSceneWithSizer("coming soon", 1000);
-        addSceneWithSizer("", 1000);
-        theater.addScene(loopScenes); // loop
-      };
+        const queueScenes = () => {
+          sentences.forEach(text => {
+            theater.addScene(() => {
+              sizer.textContent = text;
+              heroType.style.width = `${sizer.offsetWidth}px`;
+            });
+            theater.addScene(`hero-type:${text}`, 1000);
+          });
+          theater.addScene(queueScenes); // loop
+        };
 
-      const startTyping = () => {
-        span.textContent = "";
-        loopScenes();
+        queueScenes();
         theater.play();
       };
 
@@ -144,10 +137,10 @@
         const script = document.createElement("script");
         script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
         script.async = true;
-        script.onload = startTyping;
+        script.onload = setupTheater;
         document.body.appendChild(script);
       } else {
-        startTyping();
+        setupTheater();
       }
     });
   </script>
