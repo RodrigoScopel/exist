@@ -106,11 +106,10 @@
 
       const sizer = document.getElementById("sizer");
       const heroType = document.getElementById("hero-type");
-      const span = heroType.querySelector("span");
+      const span = document.querySelector("#hero-type span");
 
       if (!sizer || !heroType || !span) return;
 
-      // Helper function to resize container before each scene
       const setHeroWidth = (text) => {
         sizer.textContent = text;
         const width = sizer.offsetWidth;
@@ -120,24 +119,19 @@
       const startTyping = () => {
         span.textContent = "";
         const theater = window.theaterJS();
-
         theater.addActor("hero-type", {
           speed: 0.9,
           accuracy: 0.97,
           element: span
         });
 
-        // Add scenes with dynamic resizing
         sentences.forEach((line) => {
           theater
             .addScene(() => setHeroWidth(line))
             .addScene(`hero-type:${line}`, 1000);
         });
 
-        // Loop
-        theater
-          .addScene(() => startTyping())
-          .play();
+        theater.addScene(() => startTyping()).play();
       };
 
       if (!window.theaterJS) {
