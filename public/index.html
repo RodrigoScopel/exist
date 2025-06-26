@@ -116,8 +116,7 @@
         heroType.style.width = `${width}px`;
       };
 
-      const startTyping = () => {
-        span.textContent = "";
+      const loadTheaterAndStart = () => {
         const theater = window.theaterJS();
         theater.addActor("hero-type", {
           speed: 0.9,
@@ -125,23 +124,33 @@
           element: span
         });
 
-        sentences.forEach((line) => {
-          theater
-            .addScene(() => setHeroWidth(line))
-            .addScene(`hero-type:${line}`, 1000);
-        });
+        const loopScenes = () => {
+          sentences.forEach((line) => {
+            theater
+              .addScene(() => {
+                setHeroWidth(line);
+                span.textContent = ""; // reset content
+              })
+              .addScene(`hero-type:${line}`, 1000);
+          });
 
-        theater.addScene(() => startTyping()).play();
+          theater.addScene(() => {
+            loopScenes(); // loop again
+          });
+        };
+
+        loopScenes();
+        theater.play();
       };
 
       if (!window.theaterJS) {
         const script = document.createElement("script");
         script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
         script.async = true;
-        script.onload = startTyping;
+        script.onload = loadTheaterAndStart;
         document.body.appendChild(script);
       } else {
-        startTyping();
+        loadTheaterAndStart();
       }
     });
   </script>
