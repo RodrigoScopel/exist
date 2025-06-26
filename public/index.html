@@ -51,6 +51,7 @@
       text-align: left;
       direction: ltr;
       font-family: 'Integral CF', sans-serif;
+      transition: width 0.3s ease;
     }
 
     #hero-type span {
@@ -109,30 +110,33 @@
 
       if (!sizer || !heroType || !span) return;
 
-      // Measure max width
-      let maxWidth = 0;
-      sentences.forEach(text => {
+      // Helper function to resize container before each scene
+      const setHeroWidth = (text) => {
         sizer.textContent = text;
         const width = sizer.offsetWidth;
-        if (width > maxWidth) maxWidth = width;
-      });
-
-      heroType.style.width = `${maxWidth}px`;
+        heroType.style.width = `${width}px`;
+      };
 
       const startTyping = () => {
         span.textContent = "";
         const theater = window.theaterJS();
+
+        theater.addActor("hero-type", {
+          speed: 0.9,
+          accuracy: 0.97,
+          element: span
+        });
+
+        // Add scenes with dynamic resizing
+        sentences.forEach((line) => {
+          theater
+            .addScene(() => setHeroWidth(line))
+            .addScene(`hero-type:${line}`, 1000);
+        });
+
+        // Loop
         theater
-          .addActor("hero-type", {
-            speed: 0.9,
-            accuracy: 0.97,
-            element: span
-          })
-          .addScene("hero-type:EXIST to evolve", 1000)
-          .addScene("hero-type:evolve to EXIST", 1000)
-          .addScene("hero-type:coming soon", 1000)
-          .addScene("hero-type:", 1000)
-          .addScene(() => startTyping()) // Loop
+          .addScene(() => startTyping())
           .play();
       };
 
