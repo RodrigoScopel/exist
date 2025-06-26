@@ -30,9 +30,12 @@
       height: 100%;
       width: 100%;
       z-index: 0;
+      background: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    
     video {
       width: 100vw;
       height: 100vh;
@@ -78,6 +81,28 @@
       font-size: 2.5rem;
       font-family: 'Integral CF', sans-serif;
       padding: 1.5rem;
+    }
+
+    /* ✅ MOBILE RESPONSIVE STYLING */
+    @media (max-width: 768px) {
+      video {
+        object-fit: contain;
+        width: 100vw;
+        height: auto;
+        background: black;
+      }
+
+      #hero-type {
+        font-size: 1.6rem;
+        padding: 2rem;
+        bottom: 0%;
+        right: 0%;
+      }
+
+      #sizer {
+        font-size: 1.6rem;
+        padding: 1rem;
+      }
     }
   </style>
 </head>
