@@ -24,7 +24,7 @@
     }
 
     .video-wrapper {
-      position: fixed;
+      position: absolute;
       inset: 0;
       z-index: 0;
       background: black;
@@ -49,7 +49,9 @@
       z-index: 1;
       white-space: nowrap;
       overflow: hidden;
+      text-align: match-parent;
       direction: ltr;
+      font-family: 'Integral CF', sans-serif;
     }
 
     #hero-type span {
@@ -79,6 +81,13 @@
     }
 
     @media (max-width: 768px) {
+      video {
+        object-fit: contain;
+        width: 100vw;
+        height: 100vh;
+        background: black;
+      }
+
       #hero-type {
         font-size: 1.6rem;
         padding: 8rem;
@@ -93,8 +102,8 @@
 </head>
 <body>
   <div class="video-wrapper">
-    <video id="background-video" autoplay muted playsinline loop>
-      <source src="" id="video-source" type="video/mp4" />
+    <video id="responsive-video" autoplay muted loop playsinline>
+      <source id="video-source" src="" type="video/mp4">
       Your browser does not support the video tag.
     </video>
   </div>
@@ -104,14 +113,17 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // Set video src before load
-      const videoSrcMobile = "https://res.cloudinary.com/dicgr2srv/video/upload/v1751038613/exlanding_qgogsk.mp4";
-      const videoSrcDesktop = "https://res.cloudinary.com/dicgr2srv/video/upload/v1750964601/existlanding_2_ztvxml.mp4";
       const isMobile = window.innerWidth <= 768;
-      document.getElementById("video-source").src = isMobile ? videoSrcMobile : videoSrcDesktop;
-      document.getElementById("background-video").load();
+      const videoSrc = isMobile
+        ? "https://res.cloudinary.com/dicgr2srv/video/upload/v1751038613/exlanding_qgogsk.mp4"
+        : "https://res.cloudinary.com/dicgr2srv/video/upload/v1750964601/existlanding_2_ztvxml.mp4";
 
-      // Set dynamic typing width
+      const video = document.getElementById("responsive-video");
+      const source = document.getElementById("video-source");
+      source.src = videoSrc;
+      video.load();
+
+      // TYPE ANIMATION SETUP
       const sentences = [
         "EXIST to evolve",
         "evolve to EXIST",
@@ -164,7 +176,3 @@
   </script>
 </body>
 </html>
-
-
-
-
