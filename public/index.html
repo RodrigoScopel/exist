@@ -25,10 +25,7 @@
 
     .video-wrapper {
       position: absolute;
-      top: 0;
-      left: 0;
-      height: 100%;
-      width: 100%;
+      inset: 0;
       z-index: 0;
       background: black;
       display: flex;
@@ -44,15 +41,15 @@
 
     #hero-type {
       position: absolute;
-      bottom: 0%;
-      right: 0%;
+      bottom: 0;
+      right: 0;
       color: #78091b;
       font-size: 2.5rem;
       padding: 6rem;
       z-index: 1;
       white-space: nowrap;
       overflow: hidden;
-      text-align: match-parent;
+      text-align: left;
       direction: ltr;
       font-family: 'Integral CF', sans-serif;
     }
@@ -83,20 +80,10 @@
       padding: 1.5rem;
     }
 
-    /* ✅ MOBILE RESPONSIVE STYLING */
     @media (max-width: 768px) {
-      video {
-        object-fit: fill;
-        width: auto;
-        height: 100vh;
-        background: black;
-      }
-
       #hero-type {
         font-size: 1.6rem;
-        padding: 8rem;
-        bottom: 0%;
-        right: 0%;
+        padding: 4rem;
       }
 
       #sizer {
@@ -108,20 +95,10 @@
 </head>
 <body>
   <div class="video-wrapper">
-  <video autoplay muted loop playsinline id="responsive-video">
-    <!-- Mobile video (max 768px) -->
-    <source 
-      src="https://res.cloudinary.com/dicgr2srv/video/upload/v1751035476/exlanding_qgogsk.mp4" 
-      type="video/mp4" 
-      media="(max-width: 768px)">
-    
-    <!-- Desktop video -->
-    <source 
-      src="https://res.cloudinary.com/dicgr2srv/video/upload/v1750964601/existlanding_2_ztvxml.mp4" 
-      type="video/mp4">
-
-    Your browser does not support the video tag.
-  </video>
+    <video id="responsive-video" autoplay muted loop playsinline>
+      <source id="video-source" src="" type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
   </div>
 
   <div id="hero-type"><span></span></div>
@@ -129,13 +106,18 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-    
-      video.play().catch(() => {
-        // fallback in case autoplay fails silently
-        console.warn("Autoplay blocked.");
-      });
+      // 🌐 Swap video source based on device
+      const video = document.getElementById("responsive-video");
+      const source = document.getElementById("video-source");
+      const isMobile = window.innerWidth <= 768;
 
-      // Typing animation logic
+      source.src = isMobile
+        ? "https://res.cloudinary.com/dicgr2srv/video/upload/v1751035476/exlanding_qgogsk.mp4" // mobile version
+        : "https://res.cloudinary.com/dicgr2srv/video/upload/v1750964601/existlanding_2_ztvxml.mp4"; // desktop version
+
+      video.load(); // apply source
+
+      // 📝 Typing animation
       const sentences = [
         "EXIST to evolve",
         "evolve to EXIST",
