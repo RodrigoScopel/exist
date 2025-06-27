@@ -112,69 +112,72 @@
   <div id="sizer"></div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const isMobile = window.innerWidth <= 768;
-      const videoSrc = isMobile
-        ? "https://res.cloudinary.com/dicgr2srv/video/upload/v1751038613/exlanding_qgogsk.mp4"
-        : "https://res.cloudinary.com/dicgr2srv/video/upload/v1750964601/existlanding_2_ztvxml.mp4";
+  document.addEventListener("DOMContentLoaded", () => {
+    // ✅ 1. Get query param from Squarespace iframe embed
+    const params = new URLSearchParams(window.location.search);
+    const device = params.get('device'); // "mobile" or "desktop"
 
-      const video = document.getElementById("responsive-video");
-      const source = document.getElementById("video-source");
-      source.src = videoSrc;
-      video.load();
+    // ✅ 2. Select the right video
+    const video = document.getElementById("responsive-video");
+    const source = document.getElementById("video-source");
 
-      // TYPE ANIMATION SETUP
-      const sentences = [
-        "EXIST to evolve",
-        "evolve to EXIST",
-        "arriving...",
-        ""
-      ];
-      const params = new URLSearchParams(window.location.search);
-      const device = params.get('device'); // 'mobile' or 'desktop'
+    if (device === "mobile") {
+      source.src = "https://res.cloudinary.com/dicgr2srv/video/upload/v1751035476/exlanding_qgogsk.mp4";
+    } else {
+      source.src = "https://res.cloudinary.com/dicgr2srv/video/upload/v1750964601/existlanding_2_ztvxml.mp4";
+    }
+    video.load();
 
-      const sizer = document.getElementById("sizer");
-      const heroType = document.getElementById("hero-type");
-      const span = document.querySelector("#hero-type span");
+    // ✅ 3. Typing animation logic (unchanged)
+    const sentences = [
+      "EXIST to evolve",
+      "evolve to EXIST",
+      "arriving...",
+      ""
+    ];
 
-      if (!sizer || !heroType || !span) return;
+    const sizer = document.getElementById("sizer");
+    const heroType = document.getElementById("hero-type");
+    const span = document.querySelector("#hero-type span");
 
-      let maxWidth = 0;
-      sentences.forEach(text => {
-        sizer.textContent = text;
-        const width = sizer.offsetWidth;
-        if (width > maxWidth) maxWidth = width;
-      });
+    if (!sizer || !heroType || !span) return;
 
-      heroType.style.width = `${maxWidth}px`;
-
-      const startTyping = () => {
-        span.textContent = "";
-        const theater = window.theaterJS();
-        theater
-          .addActor("hero-type", {
-            speed: 0.9,
-            accuracy: 0.97,
-            element: span
-          })
-          .addScene("hero-type:EXIST to evolve", 1000)
-          .addScene("hero-type:evolve to EXIST", 1000)
-          .addScene("hero-type:arriving...", 2000)
-          .addScene("hero-type:", 1000)
-          .addScene(() => startTyping())
-          .play();
-      };
-
-      if (!window.theaterJS) {
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
-        script.async = true;
-        script.onload = startTyping;
-        document.body.appendChild(script);
-      } else {
-        startTyping();
-      }
+    let maxWidth = 0;
+    sentences.forEach(text => {
+      sizer.textContent = text;
+      const width = sizer.offsetWidth;
+      if (width > maxWidth) maxWidth = width;
     });
-  </script>
+
+    heroType.style.width = `${maxWidth}px`;
+
+    const startTyping = () => {
+      span.textContent = "";
+      const theater = window.theaterJS();
+      theater
+        .addActor("hero-type", {
+          speed: 0.9,
+          accuracy: 0.97,
+          element: span
+        })
+        .addScene("hero-type:EXIST to evolve", 1000)
+        .addScene("hero-type:evolve to EXIST", 1000)
+        .addScene("hero-type:arriving...", 2000)
+        .addScene("hero-type:", 1000)
+        .addScene(() => startTyping())
+        .play();
+    };
+
+    if (!window.theaterJS) {
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
+      script.async = true;
+      script.onload = startTyping;
+      document.body.appendChild(script);
+    } else {
+      startTyping();
+    }
+  });
+</script>
 </body>
 </html>
