@@ -86,7 +86,7 @@
     /* ✅ MOBILE RESPONSIVE STYLING */
       @media (max-width: 768px) {
         video {
-          object-fit: cover;
+          object-fit: contain;
           width: auto;
           height: 100vw;
           background: black;
@@ -127,7 +127,7 @@
 
       source.src = isMobile
         ? "https://res.cloudinary.com/dicgr2srv/video/upload/v1751029651/existlanding_4_ugnuoc.mp4"
-        
+
         : "https://res.cloudinary.com/dicgr2srv/video/upload/v1750964601/existlanding_2_ztvxml.mp4";
       video.load();
 
