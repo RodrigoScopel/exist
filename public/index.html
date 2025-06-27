@@ -130,6 +130,8 @@
         "arriving...",
         ""
       ];
+      const params = new URLSearchParams(window.location.search);
+      const device = params.get('device'); // 'mobile' or 'desktop'
 
       const sizer = document.getElementById("sizer");
       const heroType = document.getElementById("hero-type");
