@@ -24,7 +24,7 @@
     }
 
     .video-wrapper {
-      position: absolute;
+      position: fixed;
       inset: 0;
       z-index: 0;
       background: black;
@@ -41,17 +41,15 @@
 
     #hero-type {
       position: absolute;
-      bottom: 0;
-      right: 0;
+      bottom: 0%;
+      right: 0%;
       color: #78091b;
       font-size: 2.5rem;
       padding: 6rem;
       z-index: 1;
       white-space: nowrap;
       overflow: hidden;
-      text-align: left;
       direction: ltr;
-      font-family: 'Integral CF', sans-serif;
     }
 
     #hero-type span {
@@ -83,7 +81,7 @@
     @media (max-width: 768px) {
       #hero-type {
         font-size: 1.6rem;
-        padding: 4rem;
+        padding: 8rem;
       }
 
       #sizer {
@@ -95,8 +93,8 @@
 </head>
 <body>
   <div class="video-wrapper">
-    <video id="responsive-video" autoplay muted loop playsinline>
-      <source id="video-source" src="" type="video/mp4" />
+    <video id="background-video" autoplay muted playsinline loop>
+      <source src="" id="video-source" type="video/mp4" />
       Your browser does not support the video tag.
     </video>
   </div>
@@ -106,18 +104,14 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // 🌐 Swap video source based on device
-      const video = document.getElementById("responsive-video");
-      const source = document.getElementById("video-source");
+      // Set video src before load
+      const videoSrcMobile = "https://res.cloudinary.com/dicgr2srv/video/upload/v1751035476/exlanding_qgogsk.mp4";
+      const videoSrcDesktop = "https://res.cloudinary.com/dicgr2srv/video/upload/v1750964601/existlanding_2_ztvxml.mp4";
       const isMobile = window.innerWidth <= 768;
+      document.getElementById("video-source").src = isMobile ? videoSrcMobile : videoSrcDesktop;
+      document.getElementById("background-video").load();
 
-      source.src = isMobile
-        ? "https://res.cloudinary.com/dicgr2srv/video/upload/v1751035476/exlanding_qgogsk.mp4" // mobile version
-        : "https://res.cloudinary.com/dicgr2srv/video/upload/v1750964601/existlanding_2_ztvxml.mp4"; // desktop version
-
-      video.load(); // apply source
-
-      // 📝 Typing animation
+      // Set dynamic typing width
       const sentences = [
         "EXIST to evolve",
         "evolve to EXIST",
