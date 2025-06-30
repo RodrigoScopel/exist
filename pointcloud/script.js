@@ -31,20 +31,19 @@ function init() {
 
 async function loadAllFrames() {
   for (let i = 0; i < totalFrames; i++) {
-    const filename = `pointcloud_frames/pointcloud_${String(i).padStart(4, '0')}.json`;
+    const filename = `pointcloud_frames/frame.${i}.0.json`;
     const res = await fetch(filename);
-    const json = await res.json();
-    frameData.push(json);
+    const array = await res.json();
+    frameData.push(new Float32Array(array));
   }
 }
 
-function updatePointCloud(points) {
+function updatePointCloud(vertexArray) {
   const geometry = new THREE.BufferGeometry();
-  const vertices = new Float32Array(points.flatMap(p => [p.x, p.y, p.z]));
-  geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+  geometry.setAttribute('position', new THREE.BufferAttribute(vertexArray, 3));
 
   const material = new THREE.PointsMaterial({
-    size: 0.05,
+    size: 0.02,
     color: 0xffffff,
     transparent: true,
     opacity: 0.9,
