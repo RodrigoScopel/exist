@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -15,12 +15,20 @@
       font-family: 'Integral CF', sans-serif;
     }
 
-    
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+      display: block;
+    }
+
     #hero-type {
       position: absolute;
       bottom: 0%;
       right: 0%;
-      color: #eb0001;
+      color: #ff3333;
       font-size: 2.5rem;
       padding: 6rem;
       z-index: 10;
@@ -35,7 +43,7 @@
     #hero-type::after {
       content: '|';
       animation: blink 1s step-end infinite;
-      color: #eb0001;
+      color: #ff3333;
       margin-left: 4px;
     }
 
@@ -50,17 +58,13 @@
       font-size: 2.5rem;
       padding: 1.5rem;
     }
-
-    canvas {
-      display: block;
-    }
   </style>
 </head>
 <body>
   <div id="hero-type"><span></span></div>
   <div id="sizer"></div>
 
-  <!-- Three.js + Typing -->
+  <script src="https://unpkg.com/theaterjs@latest/dist/theater.min.js"></script>
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
 
@@ -75,10 +79,10 @@
     init();
     loadFramesInBackground();
     animate();
+    setupTyping();
 
     function init() {
       scene = new THREE.Scene();
-
       camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.8, 500);
       camera.position.set(0, 0, 20);
       camera.lookAt(0, 0, 0);
@@ -96,7 +100,7 @@
 
     function loadFramesInBackground() {
       for (let i = 1; i <= maxFrames; i++) {
-        const filename = `/frames/frame.${i.toString().padStart(4, '0')}.0.json`;
+        const filename = `frames/frame.${i.toString().padStart(4, '0')}.0.json`;
         fetch(filename)
           .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
           .then(data => {
@@ -119,10 +123,10 @@
 
       material = new THREE.PointsMaterial({
         size: 0.00001,
-        color: 0xff00ff,
+        color: 0xff3333,
         opacity: 0.9,
         depthTest: false,
-        depthWrite: false,
+        depthWrite: false
       });
 
       pointCloud = new THREE.Points(geometry, material);
@@ -150,6 +154,7 @@
 
       const currentIndex = frameOrder.indexOf(currentFrame);
       let nextIndex = currentIndex + direction;
+
       if (nextIndex >= frameOrder.length || nextIndex < 0) {
         direction *= -1;
         nextIndex = currentIndex + direction;
@@ -162,8 +167,7 @@
       renderer.render(scene, camera);
     }
 
-    // Typing animation
-    document.addEventListener("DOMContentLoaded", () => {
+    function setupTyping() {
       const sentences = ["EXIST to evolve", "evolve to EXIST", "arriving...", ""];
       const sizer = document.getElementById("sizer");
       const heroType = document.getElementById("hero-type");
@@ -205,7 +209,7 @@
       } else {
         startTyping();
       }
-    });
+    }
   </script>
 </body>
 </html>

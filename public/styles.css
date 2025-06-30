@@ -1,0 +1,20 @@
+
+@font-face {
+  font-family: 'Integral CF';
+  src: url('/fonts/integralcf-bold.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+}
+canvas {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+#hero-type {
+  z-index: 10;
+  position: absolute;
+}
+
