@@ -270,21 +270,31 @@ function animate(timestamp) {
           .play();
       };
 
-      if (window.theaterJS) {
+    if (window.theaterJS) {
+      startTyping();
+    } else {
+      let scriptLoaded = false;
+
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
+      script.async = true;
+      script.onload = () => {
+        scriptLoaded = true;
         startTyping();
-      } else {
-        const checkReady = setInterval(() => {
-          if (window.theaterJS) {
-            startTyping();
-          } else {
-            const script = document.createElement("script");
-            script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
-            script.async = true;
-            script.onload = startTyping;
-            document.body.appendChild(script);
-          }
-        }, 100);
-      }
+      };
+      document.body.appendChild(script);
+
+      // Fallback polling if onload fails (e.g. caching issues)
+      const fallback = setInterval(() => {
+        if (window.theaterJS) {
+          if (!scriptLoaded) startTyping();
+          clearInterval(fallback);
+        }
+      }, 100);
+
+      // Stop checking after 5 seconds to avoid infinite loops
+      setTimeout(() => clearInterval(fallback), 5000);
+    }
     }
   </script>
 </body>
