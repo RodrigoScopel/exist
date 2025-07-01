@@ -4,12 +4,14 @@
   <meta charset="UTF-8" />
   <title>EXIST Landing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preload" href="/fonts/integralcf-bold.woff2" as="font" type="font/woff2" crossorigin>
   <style>
     @font-face {
       font-family: 'IntegralCF-Bold';
-      src: url('/fonts/integralcf-bold.otf') format('opentype');
+      src: url('/fonts/integralcf-bold.woff2') format('woff2');
       font-weight: bold;
       font-style: normal;
+      font-display: swap;
     }
 
     html, body {
@@ -67,11 +69,8 @@
 
     @media (max-width: 768px) {
       #hero-type {
-        font-family: 'IntegralCF-Bold', sans-serif;
         font-size: 1.4rem;
         padding: 4rem;
-        right: 0;
-        bottom: 0;
       }
 
       #sizer {
@@ -85,7 +84,7 @@
   <div id="hero-type"><span></span></div>
   <div id="sizer"></div>
 
-  <script src="https://unpkg.com/theaterjs@latest/dist/theater.min.js"></script>
+  <script src="https://unpkg.com/theaterjs@latest/dist/theater.min.js" defer></script>
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
 
@@ -100,7 +99,7 @@
     let animationStarted = false;
 
     init();
-    loadFramesInBackground();
+    loadInitialFrames();
     setupTyping();
 
     function init() {
@@ -113,38 +112,54 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
+      let resizeTimeout;
       window.addEventListener("resize", () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        }, 200);
       });
     }
 
-    function loadFramesInBackground() {
-      for (let i = 1; i <= maxFrames; i++) {
-        const filename = `frames/frame.${i.toString().padStart(4, '0')}.0.json`;
+    function loadInitialFrames() {
+      // Load first 50 frames eagerly
+      for (let i = 1; i <= 50; i++) loadFrame(i, i === 1);
 
-        fetch(filename)
-          .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
-          .then(data => {
-            const array = new Float32Array(data);
-            frameData[i] = array;
-
-            if (!frameOrder.includes(i)) {
-              frameOrder.push(i);
-              frameOrder.sort((a, b) => a - b);
-            }
-
-            framesLoaded++;
-
-            if (!pointCloud && framesLoaded === 1) {
-              currentFrame = frameOrder[0];
-              setupPointCloud(array);
-              animate();
-            }
-          })
-          .catch(err => console.warn(`Failed to load ${filename}`, err));
+      // Load the rest lazily
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          for (let i = 51; i <= maxFrames; i++) loadFrame(i);
+        });
+      } else {
+        setTimeout(() => {
+          for (let i = 51; i <= maxFrames; i++) loadFrame(i);
+        }, 500);
       }
+    }
+
+    function loadFrame(i, first = false) {
+      const filename = `frames/frame.${i.toString().padStart(4, '0')}.0.json`;
+
+      fetch(filename)
+        .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
+        .then(data => {
+          const array = new Float32Array(data);
+          frameData[i] = array;
+          if (!frameOrder.includes(i)) {
+            frameOrder.push(i);
+            frameOrder.sort((a, b) => a - b);
+          }
+
+          framesLoaded++;
+          if (first) {
+            currentFrame = i;
+            setupPointCloud(array);
+            animate();
+          }
+        })
+        .catch(err => console.warn(`Failed to load ${filename}`, err));
     }
 
     function setupPointCloud(buffer) {
@@ -180,27 +195,15 @@
     }
 
     function animate() {
-      requestAnimationFrame(animate);
+      setTimeout(() => requestAnimationFrame(animate), 33); // ~30fps
 
       if (!geometry || frameOrder.length === 0 || currentFrame === null) return;
 
-      if (!animationStarted && framesLoaded < maxFrames) {
-        const nextFrame = frameOrder.find(f => f > currentFrame);
-        if (nextFrame && frameData[nextFrame]) {
-          currentFrame = nextFrame;
-          updatePointCloud(frameData[currentFrame]);
-          renderer.render(scene, camera);
-        }
-        return;
-      }
-
-      if (!animationStarted && framesLoaded === maxFrames) {
-        animationStarted = true;
-      }
+      if (!animationStarted && framesLoaded >= 50) animationStarted = true;
+      if (!animationStarted) return;
 
       const currentIndex = frameOrder.indexOf(currentFrame);
       let nextIndex = currentIndex + direction;
-
       if (nextIndex >= frameOrder.length || nextIndex < 0) {
         direction *= -1;
         nextIndex = currentIndex + direction;
@@ -242,18 +245,19 @@
           .addScene("hero-type:evolve to EXIST", 1000)
           .addScene("hero-type:arriving...", 1000)
           .addScene("hero-type:", 1000)
-          .addScene(() => setTimeout(startTyping, 500))
+          .addScene(() => startTyping())
           .play();
       };
 
-      if (!window.theaterJS) {
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
-        script.async = true;
-        script.onload = startTyping;
-        document.body.appendChild(script);
+      if (window.theaterJS) {
+        startTyping();
       } else {
-        setTimeout(startTyping, 100);
+        const checkReady = setInterval(() => {
+          if (window.theaterJS) {
+            clearInterval(checkReady);
+            startTyping();
+          }
+        }, 100);
       }
     }
   </script>
