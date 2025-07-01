@@ -67,17 +67,19 @@
       padding: 2.0rem;
     }
 
-    @media (max-width: 768px) {
-      #hero-type {
-        font-size: 1.5rem;
-        padding: 2.0rem;
-      }
+@media (max-width: 768px) {
+  #hero-type {
+    font-size: 1.4rem;
+    padding: 2rem 1rem; /* ⬅️ Reduce bottom + side padding */
+    right: 0;
+    bottom: 1rem;       /* ⬅️ Ensure it's not pushed off screen */
+  }
 
-      #sizer {
-        font-size: 1.5rem;
-        padding: 2.0rem;
-      }
-    }
+  #sizer {
+    font-size: 1.4rem;
+    padding: 1rem;
+  }
+}
   </style>
 </head>
 <body>
