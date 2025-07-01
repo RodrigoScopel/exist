@@ -1,20 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!DOCTYPE html>
-<html lang="en">
-<head>
   <meta charset="UTF-8" />
   <title>EXIST Landing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-
-  @font-face {
-    font-family: 'IntegralCF-Bold';
-    src: url('/fonts/integralcf-bold.otf') format('opentype');
-    font-weight: bold;
-    font-style: normal;
-  }
+    @font-face {
+      font-family: 'IntegralCF-Bold';
+      src: url('/fonts/integralcf-bold.otf') format('opentype');
+      font-weight: bold;
+      font-style: normal;
+    }
 
     html, body {
       margin: 0;
@@ -80,7 +76,7 @@
 
       #sizer {
         font-size: 1.4rem;
-        padding: 0.5;
+        padding: 0.5rem;
       }
     }
   </style>
@@ -144,7 +140,7 @@
             if (!pointCloud && framesLoaded === 1) {
               currentFrame = frameOrder[0];
               setupPointCloud(array);
-              animate(); // Start progressive rendering
+              animate();
             }
           })
           .catch(err => console.warn(`Failed to load ${filename}`, err));
@@ -246,7 +242,7 @@
           .addScene("hero-type:evolve to EXIST", 1000)
           .addScene("hero-type:arriving...", 1000)
           .addScene("hero-type:", 1000)
-          .addScene(() => startTyping())
+          .addScene(() => setTimeout(startTyping, 500))
           .play();
       };
 
@@ -257,7 +253,7 @@
         script.onload = startTyping;
         document.body.appendChild(script);
       } else {
-        startTyping();
+        setTimeout(startTyping, 100);
       }
     }
   </script>
