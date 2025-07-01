@@ -4,7 +4,15 @@
   <meta charset="UTF-8" />
   <title>EXIST Landing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preload" href="/fonts/integralcf-bold.otf" as="font" type="font/otf" crossorigin />
   <style>
+    @font-face {
+      font-family: 'IntegralCF-Bold';
+      src: url('/fonts/integralcf-bold.otf') format('opentype');
+      font-weight: bold;
+      font-style: normal;
+    }
+
     html, body {
       margin: 0;
       padding: 0;
@@ -12,8 +20,9 @@
       width: 100%;
       background: black;
       overflow: hidden;
-      font-family: sans-serif;
+      font-family: 'IntegralCF-Bold', sans-serif;
     }
+
     canvas {
       position: absolute;
       top: 0;
@@ -21,6 +30,7 @@
       display: block;
       z-index: 0;
     }
+
     #hero-type {
       position: absolute;
       bottom: 0;
@@ -31,17 +41,24 @@
       z-index: 9999;
       white-space: nowrap;
       overflow: hidden;
+      font-family: 'IntegralCF-Bold', sans-serif;
     }
+
     #hero-type span {
       display: inline-block;
     }
+
     #hero-type::after {
       content: '|';
       animation: blink 1s step-end infinite;
       color: #ff3333;
       margin-left: 4px;
     }
-    @keyframes blink { 50% { opacity: 0; } }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
     #sizer {
       visibility: hidden;
       position: absolute;
@@ -49,13 +66,15 @@
       font-size: 2.5rem;
       padding: 2rem;
     }
+
     @media (max-width: 768px) {
       #hero-type {
         font-size: 1.4rem;
-        padding: 1rem;
+        padding: 1rem 0.5rem;
         bottom: 1rem;
         right: 0;
       }
+
       #sizer {
         font-size: 1.4rem;
         padding: 1rem;
@@ -66,55 +85,34 @@
 <body>
   <div id="hero-type"><span></span></div>
   <div id="sizer"></div>
+
   <script src="https://unpkg.com/theaterjs@latest/dist/theater.min.js" defer></script>
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
 
-    const githubChunks = [
-      {
-        bin: "https://raw.githubusercontent.com/RodrigoScopel/exist/main/public/frames/combined_0.bin",
-        index: "https://raw.githubusercontent.com/RodrigoScopel/exist/main/public/frames/index_0.json"
-      },
-      {
-        bin: "https://raw.githubusercontent.com/RodrigoScopel/exist/main/public/frames/combined_1.bin",
-        index: "https://raw.githubusercontent.com/RodrigoScopel/exist/main/public/frames/index_1.json"
-      },
-      {
-         bin: "https://raw.githubusercontent.com/RodrigoScopel/exist/main/public/frames/combined_2.bin",
-        index: "https://raw.githubusercontent.com/RodrigoScopel/exist/main/public/frames/index_2.json"
-      },
-      {
-        bin: "https://raw.githubusercontent.com/RodrigoScopel/exist/main/public/frames/combined_3.bin",
-        index: "https://raw.githubusercontent.com/RodrigoScopel/exist/main/public/frames/index_3.json"
-      },
-      {        bin: "https://raw.githubusercontent.com/RodrigoScopel/exist/main/public/frames/combined_4.bin",
-        index: "https://raw.githubusercontent.com/RodrigoScopel/exist/main/public/frames/index_4.json"
-      },
-      
-      // Add more if needed
-    ];
-
     let scene, camera, renderer, pointCloud, geometry, material;
-    let allIndex = [];
-    let allBuffers = [];
-    let frameCount = 0;
+    let buffers = [];
+    let index = [];
     let currentFrame = 0;
     let direction = 1;
     const targetFPS = 60;
     const frameDuration = 1000 / targetFPS;
     let lastTime = 0;
+    const CHUNK_COUNT = 5; // Update if using more or fewer chunks
 
     init();
-    loadAllChunks();
+    loadChunks();
     setupTyping();
 
     function init() {
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.8, 500);
       camera.position.z = 20;
+
       renderer = new THREE.WebGLRenderer({ alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
+
       window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
@@ -122,26 +120,25 @@
       });
     }
 
-    async function loadAllChunks() {
-      const promises = githubChunks.map(async ({ bin, index }) => {
-        const [binRes, indexRes] = await Promise.all([
-          fetch(bin).then(r => r.arrayBuffer()),
-          fetch(index).then(r => r.json())
+    async function loadChunks() {
+      for (let i = 0; i < CHUNK_COUNT; i++) {
+        const [binRes, idxRes] = await Promise.all([
+          fetch(`frames/combined_${i}.bin`),
+          fetch(`frames/index_${i}.json`)
         ]);
-        return { buffer: binRes, index: indexRes };
-      });
 
-      const results = await Promise.all(promises);
-      results.forEach(({ buffer, index }) => {
-        allBuffers.push(buffer);
-        allIndex.push(...index);
-      });
+        const bin = await binRes.arrayBuffer();
+        const idx = await idxRes.json();
+        buffers.push(bin);
+        index.push(...idx.map(entry => ({ ...entry, bufferIndex: i })));
+      }
 
-      frameCount = allIndex.length;
-      const first = allIndex[0];
-      const firstView = new Float32Array(allBuffers[0], first.offset, first.length / 4);
-      setupPointCloud(firstView);
-      requestAnimationFrame(animate);
+      if (index.length > 0) {
+        const first = index[0];
+        const array = new Float32Array(buffers[first.bufferIndex], first.offset, first.length / 4);
+        setupPointCloud(array);
+        requestAnimationFrame(animate);
+      }
     }
 
     function setupPointCloud(positionArray) {
@@ -153,38 +150,36 @@
         depthTest: false,
         depthWrite: false
       });
+
       pointCloud = new THREE.Points(geometry, material);
       scene.add(pointCloud);
     }
 
     function animate(timestamp) {
       requestAnimationFrame(animate);
-      if (!frameCount || timestamp - lastTime < frameDuration) return;
+      if (!buffers.length || index.length === 0) return;
+      if (timestamp - lastTime < frameDuration) return;
       lastTime = timestamp;
 
       currentFrame += direction;
-      if (currentFrame >= frameCount || currentFrame < 0) {
+      if (currentFrame >= index.length || currentFrame < 0) {
         direction *= -1;
         currentFrame += direction;
       }
 
-      const frameMeta = allIndex[currentFrame];
-      const binIndex = githubChunks.findIndex((_, i) => {
-        const start = i === 0 ? 0 : allIndex.slice(0, currentFrame).filter(f => githubChunks[i].index.includes(f.name)).length;
-        return currentFrame < start + githubChunks[i].length;
-      });
-      const buffer = allBuffers[binIndex];
+      const { offset, length, bufferIndex } = index[currentFrame];
+      const array = new Float32Array(buffers[bufferIndex], offset, length / 4);
 
-      const view = new Float32Array(buffer, frameMeta.offset, frameMeta.length / 4);
-      if (view.length !== pointCloud.geometry.attributes.position.count * 3) {
+      if (array.length !== pointCloud.geometry.attributes.position.count * 3) {
         const newGeometry = new THREE.BufferGeometry();
-        newGeometry.setAttribute("position", new THREE.BufferAttribute(view, 3));
+        newGeometry.setAttribute("position", new THREE.BufferAttribute(array, 3));
         pointCloud.geometry.dispose();
         pointCloud.geometry = newGeometry;
       } else {
-        pointCloud.geometry.attributes.position.array.set(view);
+        pointCloud.geometry.attributes.position.array.set(array);
         pointCloud.geometry.attributes.position.needsUpdate = true;
       }
+
       renderer.render(scene, camera);
     }
 
@@ -199,6 +194,7 @@
         const width = sizer.offsetWidth;
         if (width > maxWidth) maxWidth = width;
       });
+
       document.getElementById("hero-type").style.width = `${maxWidth}px`;
 
       const startTyping = () => {
