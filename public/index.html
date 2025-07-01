@@ -4,14 +4,13 @@
   <meta charset="UTF-8" />
   <title>EXIST Landing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preload" href="/fonts/integralcf-bold.otf" as="font" type="font/otf" crossorigin>
+  <!-- <link rel="preload" href="/fonts/integralcf-bold.otf" as="font" type="font/otf" crossorigin /> -->
   <style>
     @font-face {
       font-family: 'IntegralCF-Bold';
-      src: url('/fonts/integralcf-bold.otf') format('opentype');
+      src: url('https://exist-flame.vercel.app/fonts/integralcf-bold.otf') format('opentype');
       font-weight: bold;
       font-style: normal;
-      font-display: swap;
     }
 
     html, body {
@@ -29,16 +28,15 @@
       top: 0;
       left: 0;
       z-index: 0;
-      display: block;
     }
 
     #hero-type {
       position: absolute;
-      bottom: 0%;
-      right: 0%;
+      bottom: 1rem;
+      right: 0;
       color: #ff3333;
       font-size: 2.5rem;
-      padding: 6rem;
+      padding: 1rem 2rem;
       z-index: 9999;
       white-space: nowrap;
       overflow: hidden;
@@ -64,22 +62,20 @@
       position: absolute;
       white-space: nowrap;
       font-size: 2.5rem;
-      padding: 2.0rem;
+      padding: 2rem;
     }
 
-@media (max-width: 768px) {
-  #hero-type {
-    font-size: 1.4rem;
-    padding: 1rem 0.5rem; /* ⬅️ Reduce bottom + side padding */
-    right: 0;
-    bottom: 1rem;       /* ⬅️ Ensure it's not pushed off screen */
-  }
+    @media (max-width: 768px) {
+      #hero-type {
+        font-size: 1.4rem;
+        padding: 0.5rem 1rem;
+      }
 
-  #sizer {
-    font-size: 1.4rem;
-    padding: 1rem;
-  }
-}
+      #sizer {
+        font-size: 1.4rem;
+        padding: 0.5rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -90,152 +86,114 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
 
-    let scene, camera, renderer;
-    let geometry, material, pointCloud;
-    let frameData = {};
-    let frameOrder = [];
-    let currentFrame = null;
+    let scene, camera, renderer, pointCloud;
+    let index = [];
+    let buffer = null;
+    let currentFrame = 0;
     let direction = 1;
-    const maxFrames = 599;
-    let framesLoaded = 0;
-    let animationStarted = false;
+
+    const fps = 60;
+    const frameInterval = 1000 / fps;
+    let lastFrameTime = 0;
 
     init();
-    loadInitialFrames();
+    loadBinaryData();
     setupTyping();
 
     function init() {
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.8, 500);
       camera.position.set(0, 0, 20);
-      camera.lookAt(0, 0, 0);
 
       renderer = new THREE.WebGLRenderer({ alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
-      let resizeTimeout;
       window.addEventListener("resize", () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-          camera.aspect = window.innerWidth / window.innerHeight;
-          camera.updateProjectionMatrix();
-          renderer.setSize(window.innerWidth, window.innerHeight);
-        }, 200);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
       });
     }
 
-    function loadInitialFrames() {
-      // Load first 50 frames eagerly
-      for (let i = 1; i <= 50; i++) loadFrame(i, i === 1);
-
-      // Load the rest lazily
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(() => {
-          for (let i = 51; i <= maxFrames; i++) loadFrame(i);
-        });
-      } else {
-        setTimeout(() => {
-          for (let i = 51; i <= maxFrames; i++) loadFrame(i);
-        }, 500);
+    async function loadBinaryData() {
+      try {
+        const [indexRes, binRes] = await Promise.all([
+          fetch('frames/index.json'),
+          fetch('frames/combined.bin')
+        ]);
+        index = await indexRes.json();
+        buffer = await binRes.arrayBuffer();
+        if (index.length > 0) {
+          setupPointCloud(readFrame(index[0]));
+          requestAnimationFrame(animate);
+        }
+      } catch (e) {
+        console.error('Failed to load binary data:', e);
       }
     }
 
-    function loadFrame(i, first = false) {
-      const filename = `frames/frame.${i.toString().padStart(4, '0')}.0.json`;
-
-      fetch(filename)
-        .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
-        .then(data => {
-          const array = new Float32Array(data);
-          frameData[i] = array;
-          if (!frameOrder.includes(i)) {
-            frameOrder.push(i);
-            frameOrder.sort((a, b) => a - b);
-          }
-
-          framesLoaded++;
-          if (first) {
-            currentFrame = i;
-            setupPointCloud(array);
-            animate();
-          }
-        })
-        .catch(err => console.warn(`Failed to load ${filename}`, err));
+    function readFrame(meta) {
+      if (!meta || !buffer) return null;
+      if (meta.offset + meta.length > buffer.byteLength) {
+        console.warn('Frame out of range:', meta);
+        return null;
+      }
+      const view = new DataView(buffer, meta.offset, meta.length);
+      const arr = new Float32Array(view.byteLength / 4);
+      for (let i = 0; i < arr.length; i++) {
+        arr[i] = view.getFloat32(i * 4, true);
+      }
+      return arr;
     }
 
-    function setupPointCloud(buffer) {
-      geometry = new THREE.BufferGeometry();
-      geometry.setAttribute("position", new THREE.BufferAttribute(buffer, 3));
-      geometry.setDrawRange(0, buffer.length / 3);
+    function setupPointCloud(array) {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(array, 3));
+      geometry.setDrawRange(0, array.length / 3);
 
-      material = new THREE.PointsMaterial({
+      const material = new THREE.PointsMaterial({
         size: 0.01,
         color: 0xff3333,
-        opacity: 1.0,
-        depthTest: false,
-        depthWrite: false
+        depthTest: false
       });
 
       pointCloud = new THREE.Points(geometry, material);
       scene.add(pointCloud);
     }
 
-    function updatePointCloud(buffer) {
-      if (!pointCloud) return;
-      const existing = pointCloud.geometry.attributes.position.array;
-      if (buffer.length !== existing.length) {
-        const newGeometry = new THREE.BufferGeometry();
-        newGeometry.setAttribute("position", new THREE.BufferAttribute(buffer, 3));
+    function updatePointCloud(array) {
+      const geom = pointCloud.geometry;
+      if (array.length !== geom.attributes.position.array.length) {
+        const newGeom = new THREE.BufferGeometry();
+        newGeom.setAttribute('position', new THREE.BufferAttribute(array, 3));
         pointCloud.geometry.dispose();
-        pointCloud.geometry = newGeometry;
+        pointCloud.geometry = newGeom;
       } else {
-        pointCloud.geometry.attributes.position.array.set(buffer);
-        pointCloud.geometry.attributes.position.needsUpdate = true;
+        geom.attributes.position.array.set(array);
+        geom.attributes.position.needsUpdate = true;
+        geom.setDrawRange(0, array.length / 3);
       }
-      pointCloud.geometry.setDrawRange(0, buffer.length / 3);
     }
 
-    let lastFrameTime = 0;
-const targetFPS = 60;
-const frameDuration = 1000 / targetFPS;
+    function animate(timestamp) {
+      requestAnimationFrame(animate);
+      if (!pointCloud || !index.length || !buffer) return;
+      if (timestamp - lastFrameTime < frameInterval) return;
+      lastFrameTime = timestamp;
 
-function animate(timestamp) {
-  requestAnimationFrame(animate);
+      const frameMeta = index[currentFrame];
+      const array = readFrame(frameMeta);
+      if (array) updatePointCloud(array);
 
-  if (timestamp - lastFrameTime < frameDuration) return;
-  lastFrameTime = timestamp;
+      currentFrame += direction;
+      if (currentFrame >= index.length || currentFrame < 0) {
+        direction *= -1;
+        currentFrame += direction;
+      }
 
-  if (!geometry || frameOrder.length === 0 || currentFrame === null) return;
-
-  if (!animationStarted && framesLoaded < maxFrames) {
-    const nextFrame = frameOrder.find(f => f > currentFrame);
-    if (nextFrame && frameData[nextFrame]) {
-      currentFrame = nextFrame;
-      updatePointCloud(frameData[currentFrame]);
       renderer.render(scene, camera);
     }
-    return;
-  }
-
-  if (!animationStarted && framesLoaded === maxFrames) {
-    animationStarted = true;
-  }
-
-  const currentIndex = frameOrder.indexOf(currentFrame);
-  let nextIndex = currentIndex + direction;
-
-  if (nextIndex >= frameOrder.length || nextIndex < 0) {
-    direction *= -1;
-    nextIndex = currentIndex + direction;
-  }
-
-  currentFrame = frameOrder[nextIndex];
-  const buffer = frameData[currentFrame];
-  if (buffer) updatePointCloud(buffer);
-
-  renderer.render(scene, camera);
-}
 
     function setupTyping() {
       const sentences = ["EXIST to evolve", "evolve to EXIST", "arriving...", ""];
@@ -250,7 +208,6 @@ function animate(timestamp) {
         const width = sizer.offsetWidth;
         if (width > maxWidth) maxWidth = width;
       });
-
       heroType.style.width = `${maxWidth}px`;
 
       const startTyping = () => {
@@ -270,31 +227,14 @@ function animate(timestamp) {
           .play();
       };
 
-    if (window.theaterJS) {
-      startTyping();
-    } else {
-      let scriptLoaded = false;
-
-      const script = document.createElement("script");
-      script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
-      script.async = true;
-      script.onload = () => {
-        scriptLoaded = true;
-        startTyping();
-      };
-      document.body.appendChild(script);
-
-      // Fallback polling if onload fails (e.g. caching issues)
-      const fallback = setInterval(() => {
-        if (window.theaterJS) {
-          if (!scriptLoaded) startTyping();
-          clearInterval(fallback);
-        }
-      }, 100);
-
-      // Stop checking after 5 seconds to avoid infinite loops
-      setTimeout(() => clearInterval(fallback), 5000);
-    }
+      if (window.theaterJS) startTyping();
+      else {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
+        script.async = true;
+        script.onload = startTyping;
+        document.body.appendChild(script);
+      }
     }
   </script>
 </body>
