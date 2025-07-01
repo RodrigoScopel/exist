@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  
   <meta charset="UTF-8" />
   <title>EXIST Landing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -16,7 +15,6 @@
       font-family: 'IntegralCF-Bold', sans-serif;
     }
 
-    
     canvas {
       position: absolute;
       top: 0;
@@ -27,8 +25,8 @@
 
     #hero-type {
       position: absolute;
-      bottom: 0;
-      right: 0;
+      bottom: 0%;
+      right: 0%;
       color: #ff3333;
       font-size: 2.5rem;
       padding: 6rem;
@@ -90,6 +88,8 @@
     let currentFrame = null;
     let direction = 1;
     const maxFrames = 599;
+    let framesLoaded = 0;
+    let animationStarted = false;
 
     init();
     loadFramesInBackground();
@@ -113,8 +113,6 @@
     }
 
     function loadFramesInBackground() {
-      let framesLoaded = 0;
-
       for (let i = 1; i <= maxFrames; i++) {
         const filename = `frames/frame.${i.toString().padStart(4, '0')}.0.json`;
 
@@ -123,14 +121,18 @@
           .then(data => {
             const array = new Float32Array(data);
             frameData[i] = array;
-            frameOrder.push(i);
+
+            if (!frameOrder.includes(i)) {
+              frameOrder.push(i);
+              frameOrder.sort((a, b) => a - b);
+            }
+
             framesLoaded++;
 
-            if (framesLoaded === maxFrames) {
-              frameOrder.sort((a, b) => a - b);
+            if (!pointCloud && framesLoaded === 1) {
               currentFrame = frameOrder[0];
-              setupPointCloud(frameData[currentFrame]);
-              animate();
+              setupPointCloud(array);
+              animate(); // Start progressive rendering
             }
           })
           .catch(err => console.warn(`Failed to load ${filename}`, err));
@@ -171,7 +173,22 @@
 
     function animate() {
       requestAnimationFrame(animate);
-      if (!geometry || frameOrder.length < 2 || currentFrame === null) return;
+
+      if (!geometry || frameOrder.length === 0 || currentFrame === null) return;
+
+      if (!animationStarted && framesLoaded < maxFrames) {
+        const nextFrame = frameOrder.find(f => f > currentFrame);
+        if (nextFrame && frameData[nextFrame]) {
+          currentFrame = nextFrame;
+          updatePointCloud(frameData[currentFrame]);
+          renderer.render(scene, camera);
+        }
+        return;
+      }
+
+      if (!animationStarted && framesLoaded === maxFrames) {
+        animationStarted = true;
+      }
 
       const currentIndex = frameOrder.indexOf(currentFrame);
       let nextIndex = currentIndex + direction;
