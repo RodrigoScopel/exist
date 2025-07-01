@@ -11,7 +11,6 @@
       src: url('/fonts/integralcf-bold.otf') format('opentype');
       font-weight: bold;
       font-style: normal;
-      font-display: swap;
     }
 
     html, body {
@@ -28,20 +27,21 @@
       position: absolute;
       top: 0;
       left: 0;
-      z-index: 0;
       display: block;
+      z-index: 0;
     }
 
     #hero-type {
       position: absolute;
-      bottom: 0%;
-      right: 0%;
+      bottom: 0;
+      right: 0;
       color: #ff3333;
       font-size: 2.5rem;
       padding: 6rem;
       z-index: 9999;
       white-space: nowrap;
       overflow: hidden;
+      font-family: 'IntegralCF-Bold', sans-serif;
     }
 
     #hero-type span {
@@ -90,79 +90,55 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
 
-    let scene, camera, renderer, geometry, material, pointCloud;
+    let scene, camera, renderer, pointCloud, geometry, material;
     let currentFrame = 0;
     let direction = 1;
-    let frames = [];
-    let combinedBuffer;
+    let buffer, index, frameCount;
+    const targetFPS = 60;
+    const frameDuration = 1000 / targetFPS;
+    let lastTime = 0;
 
     init();
-    loadBinaryData();
+    loadData();
     setupTyping();
 
     function init() {
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.8, 500);
-      camera.position.set(0, 0, 20);
-      camera.lookAt(0, 0, 0);
+      camera.position.z = 20;
 
       renderer = new THREE.WebGLRenderer({ alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
-      window.addEventListener("resize", () => {
+      window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
       });
     }
 
-    async function loadBinaryData() {
-      try {
-        const [indexRes, binRes] = await Promise.all([
-          fetch('frames/index.json'),
-          fetch('frames/combined.bin')
-        ]);
+    async function loadData() {
+      const [binRes, indexRes] = await Promise.all([
+        fetch("frames/combined.bin"),
+        fetch("frames/index.json")
+      ]);
 
-        frames = await indexRes.json();
-        combinedBuffer = await binRes.arrayBuffer();
+      buffer = await binRes.arrayBuffer();
+      index = await indexRes.json();
+      frameCount = index.length;
 
-        if (frames.length === 0) throw new Error("No frames loaded");
-        const first = readFrame(frames[0]);
-        if (!first) throw new Error("Failed to parse first frame");
-        setupPointCloud(first);
-        animate();
-
-      } catch (err) {
-        console.error("Failed to load binary data:", err);
-      }
+      const firstView = new Float32Array(buffer, index[0].offset, index[0].length / 4);
+      setupPointCloud(firstView);
+      requestAnimationFrame(animate);
     }
 
-    function readFrame(meta) {
-      if (!meta || typeof meta.offset !== 'number' || typeof meta.length !== 'number') return null;
-      if (meta.offset + meta.length > combinedBuffer.byteLength) {
-        console.warn("⚠️ Frame out of range:", meta);
-        return null;
-      }
-
-      const view = new DataView(combinedBuffer, meta.offset, meta.length);
-      const count = meta.length / 4;
-      const array = new Float32Array(count);
-      for (let i = 0; i < count; i++) {
-        array[i] = view.getFloat32(i * 4, true);
-      }
-      return array;
-    }
-
-    function setupPointCloud(buffer) {
+    function setupPointCloud(positionArray) {
       geometry = new THREE.BufferGeometry();
-      geometry.setAttribute("position", new THREE.BufferAttribute(buffer, 3));
-      geometry.setDrawRange(0, buffer.length / 3);
-
+      geometry.setAttribute("position", new THREE.BufferAttribute(positionArray, 3));
       material = new THREE.PointsMaterial({
         size: 0.01,
         color: 0xff3333,
-        opacity: 1.0,
         depthTest: false,
         depthWrite: false
       });
@@ -171,36 +147,28 @@
       scene.add(pointCloud);
     }
 
-    function updatePointCloud(buffer) {
-      const existing = pointCloud.geometry.attributes.position.array;
-      if (buffer.length !== existing.length) {
+    function animate(timestamp) {
+      requestAnimationFrame(animate);
+      if (!buffer || !index || timestamp - lastTime < frameDuration) return;
+      lastTime = timestamp;
+
+      currentFrame += direction;
+      if (currentFrame >= frameCount || currentFrame < 0) {
+        direction *= -1;
+        currentFrame += direction;
+      }
+
+      const { offset, length } = index[currentFrame];
+      const array = new Float32Array(buffer, offset, length / 4);
+
+      if (array.length !== pointCloud.geometry.attributes.position.count * 3) {
         const newGeometry = new THREE.BufferGeometry();
-        newGeometry.setAttribute("position", new THREE.BufferAttribute(buffer, 3));
+        newGeometry.setAttribute("position", new THREE.BufferAttribute(array, 3));
         pointCloud.geometry.dispose();
         pointCloud.geometry = newGeometry;
       } else {
-        pointCloud.geometry.attributes.position.array.set(buffer);
+        pointCloud.geometry.attributes.position.array.set(array);
         pointCloud.geometry.attributes.position.needsUpdate = true;
-      }
-      pointCloud.geometry.setDrawRange(0, buffer.length / 3);
-    }
-
-    let lastFrameTime = 0;
-    const targetFPS = 60;
-    const frameDuration = 1000 / targetFPS;
-
-    function animate(timestamp = 0) {
-      requestAnimationFrame(animate);
-      if (timestamp - lastFrameTime < frameDuration) return;
-      lastFrameTime = timestamp;
-
-      const buffer = readFrame(frames[currentFrame]);
-      if (buffer) updatePointCloud(buffer);
-
-      currentFrame += direction;
-      if (currentFrame >= frames.length || currentFrame < 0) {
-        direction *= -1;
-        currentFrame += direction;
       }
 
       renderer.render(scene, camera);
@@ -209,9 +177,7 @@
     function setupTyping() {
       const sentences = ["EXIST to evolve", "evolve to EXIST", "arriving...", ""];
       const sizer = document.getElementById("sizer");
-      const heroType = document.getElementById("hero-type");
       const span = document.querySelector("#hero-type span");
-      if (!sizer || !heroType || !span) return;
 
       let maxWidth = 0;
       sentences.forEach(text => {
@@ -220,17 +186,13 @@
         if (width > maxWidth) maxWidth = width;
       });
 
-      heroType.style.width = `${maxWidth}px`;
+      document.getElementById("hero-type").style.width = `${maxWidth}px`;
 
       const startTyping = () => {
         span.textContent = "";
         const theater = window.theaterJS();
         theater
-          .addActor("hero-type", {
-            speed: 0.9,
-            accuracy: 0.97,
-            element: span
-          })
+          .addActor("hero-type", { speed: 0.9, accuracy: 0.97, element: span })
           .addScene("hero-type:EXIST to evolve", 1000)
           .addScene("hero-type:evolve to EXIST", 1000)
           .addScene("hero-type:arriving...", 1000)
@@ -244,7 +206,6 @@
       } else {
         const script = document.createElement("script");
         script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
-        script.async = true;
         script.onload = startTyping;
         document.body.appendChild(script);
       }
