@@ -123,9 +123,9 @@
       geometry.setDrawRange(0, buffer.length / 3);
 
       material = new THREE.PointsMaterial({
-        size: 0.00001,
+        size: 0.01,
         color: 0xff3333,
-        opacity: 0.9,
+        opacity: 1.0,
         depthTest: false,
         depthWrite: false
       });
@@ -195,7 +195,7 @@
           })
           .addScene("hero-type:EXIST to evolve", 1000)
           .addScene("hero-type:evolve to EXIST", 1000)
-          .addScene("hero-type:arriving...", 2000)
+          .addScene("hero-type:arriving...", 1000)
           .addScene("hero-type:", 1000)
           .addScene(() => startTyping())
           .play();
