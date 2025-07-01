@@ -133,8 +133,8 @@
 
     function setupPointCloud(buffer) {
       geometry = new THREE.BufferGeometry();
-      geometry.setAttribute("position", new THREE.BufferAttribute(buffer, 1));
-      geometry.setDrawRange(0, buffer.length / 1);
+      geometry.setAttribute("position", new THREE.BufferAttribute(buffer, 599));
+      geometry.setDrawRange(0, buffer.length / 599);
 
       material = new THREE.PointsMaterial({
         size: 0.01,
