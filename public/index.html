@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -13,10 +13,7 @@
       background: black;
       overflow: hidden;
       font-family: 'IntegralCF-Bold', sans-serif;
-      
     }
-    
-
 
     canvas {
       position: absolute;
@@ -28,8 +25,8 @@
 
     #hero-type {
       position: absolute;
-      bottom: 0%;
-      right: 0%;
+      bottom: 0;
+      right: 0;
       color: #ff3333;
       font-size: 2.5rem;
       padding: 6rem;
@@ -60,19 +57,20 @@
       font-size: 2.5rem;
       padding: 1.5rem;
     }
-    @media (max-width: 768px) {
-  #hero-type {
-    font-size: 1.4rem;
-    padding: 2rem;
-    right: 0;
-    bottom: 0;
-  }
 
-  #sizer {
-    font-size: 1.4rem;
-    padding: 0.5rem;
-  }
-}
+    @media (max-width: 768px) {
+      #hero-type {
+        font-size: 1.4rem;
+        padding: 2rem;
+        right: 0;
+        bottom: 0;
+      }
+
+      #sizer {
+        font-size: 1.4rem;
+        padding: 0.5rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -112,9 +110,9 @@
       });
     }
 
-    let framesLoaded = 0;
-
     function loadFramesInBackground() {
+      let framesLoaded = 0;
+
       for (let i = 1; i <= maxFrames; i++) {
         const filename = `frames/frame.${i.toString().padStart(4, '0')}.0.json`;
 
@@ -126,12 +124,11 @@
             frameOrder.push(i);
             framesLoaded++;
 
-            // ✅ When all frames are loaded, initialize everything
             if (framesLoaded === maxFrames) {
               frameOrder.sort((a, b) => a - b);
               currentFrame = frameOrder[0];
               setupPointCloud(frameData[currentFrame]);
-              animate(); // 👈 Start animation only here
+              animate();
             }
           })
           .catch(err => console.warn(`Failed to load ${filename}`, err));
