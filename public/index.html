@@ -4,13 +4,14 @@
   <meta charset="UTF-8" />
   <title>EXIST Landing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- <link rel="preload" href="/fonts/integralcf-bold.otf" as="font" type="font/otf" crossorigin /> -->
+  <link rel="preload" href="/fonts/integralcf-bold.otf" as="font" type="font/otf" crossorigin />
   <style>
     @font-face {
       font-family: 'IntegralCF-Bold';
-      src: url('https://exist-flame.vercel.app/fonts/integralcf-bold.otf') format('opentype');
+      src: url('/fonts/integralcf-bold.otf') format('opentype');
       font-weight: bold;
       font-style: normal;
+      font-display: swap;
     }
 
     html, body {
@@ -28,15 +29,16 @@
       top: 0;
       left: 0;
       z-index: 0;
+      display: block;
     }
 
     #hero-type {
       position: absolute;
-      bottom: 1rem;
-      right: 0;
+      bottom: 0%;
+      right: 0%;
       color: #ff3333;
       font-size: 2.5rem;
-      padding: 1rem 2rem;
+      padding: 6rem;
       z-index: 9999;
       white-space: nowrap;
       overflow: hidden;
@@ -68,12 +70,14 @@
     @media (max-width: 768px) {
       #hero-type {
         font-size: 1.4rem;
-        padding: 0.5rem 1rem;
+        padding: 1rem 0.5rem;
+        bottom: 1rem;
+        right: 0;
       }
 
       #sizer {
         font-size: 1.4rem;
-        padding: 0.5rem;
+        padding: 1rem;
       }
     }
   </style>
@@ -82,196 +86,169 @@
   <div id="hero-type"><span></span></div>
   <div id="sizer"></div>
 
-<script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
+  <script src="https://unpkg.com/theaterjs@latest/dist/theater.min.js" defer></script>
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
 
-let scene, camera, renderer;
-let geometry, material, pointCloud;
-let frameData = {};
-let frameOrder = [];
-let currentFrame = null;
-let direction = 1;
-let animationStarted = false;
-let binaryBuffer = null;
-let index = [];
+    let scene, camera, renderer, geometry, material, pointCloud;
+    let currentFrame = 0;
+    let direction = 1;
+    let frames = [];
+    let combinedBuffer;
 
-const maxFrames = 599;
-const FRAME_SCALE = 1.0;
+    init();
+    loadBinaryData();
+    setupTyping();
 
-init();
-loadBinaryData();
-setupTyping();
+    function init() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.8, 500);
+      camera.position.set(0, 0, 20);
+      camera.lookAt(0, 0, 0);
 
-function init() {
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.8, 500);
-  camera.position.set(0, 0, 20);
-  camera.lookAt(0, 0, 0);
+      renderer = new THREE.WebGLRenderer({ alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
 
-  renderer = new THREE.WebGLRenderer({ alpha: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
-
-  window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-}
-
-async function loadBinaryData() {
-  try {
-    index = await fetch("frames/index.json").then(res => res.json());
-    binaryBuffer = await fetch("frames/combined.bin").then(res => res.arrayBuffer());
-
-    index.forEach((frame, i) => {
-      const buffer = readFrame(frame, binaryBuffer);
-      if (buffer) {
-        frameData[i + 1] = buffer;
-        frameOrder.push(i + 1);
-      }
-    });
-
-    if (frameOrder.length > 0) {
-      currentFrame = frameOrder[0];
-      setupPointCloud(frameData[currentFrame]);
-      animate();
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
     }
-  } catch (err) {
-    console.error("Failed to load binary data:", err);
-  }
-}
 
-function readFrame(frameInfo, buffer) {
-  if (!frameInfo || !buffer) return null;
-  const { offset, length } = frameInfo;
-  if (offset + length > buffer.byteLength) {
-    console.warn("⚠️ Frame out of range:", frameInfo);
-    return null;
-  }
-  const view = new DataView(buffer, offset, length);
-  const floatArray = new Float32Array(length / 4);
-  for (let i = 0; i < floatArray.length; i++) {
-    floatArray[i] = view.getFloat32(i * 4, true);
-  }
-  return floatArray;
-}
+    async function loadBinaryData() {
+      try {
+        const [indexRes, binRes] = await Promise.all([
+          fetch('frames/index.json'),
+          fetch('frames/combined.bin')
+        ]);
 
-function setupPointCloud(buffer) {
-  if (!buffer || !buffer.length) return;
+        frames = await indexRes.json();
+        combinedBuffer = await binRes.arrayBuffer();
 
-  const scaled = new Float32Array(buffer.length);
-  for (let i = 0; i < buffer.length; i++) {
-    scaled[i] = buffer[i] * FRAME_SCALE;
-  }
+        if (frames.length === 0) throw new Error("No frames loaded");
+        const first = readFrame(frames[0]);
+        if (!first) throw new Error("Failed to parse first frame");
+        setupPointCloud(first);
+        animate();
 
-  geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.BufferAttribute(scaled, 3));
-  geometry.setDrawRange(0, scaled.length / 3);
+      } catch (err) {
+        console.error("Failed to load binary data:", err);
+      }
+    }
 
-  material = new THREE.PointsMaterial({
-    size: 0.01,
-    color: 0xff3333,
-    opacity: 1.0,
-    depthTest: false,
-    depthWrite: false
-  });
+    function readFrame(meta) {
+      if (!meta || typeof meta.offset !== 'number' || typeof meta.length !== 'number') return null;
+      if (meta.offset + meta.length > combinedBuffer.byteLength) {
+        console.warn("⚠️ Frame out of range:", meta);
+        return null;
+      }
 
-  pointCloud = new THREE.Points(geometry, material);
-  scene.add(pointCloud);
-}
+      const view = new DataView(combinedBuffer, meta.offset, meta.length);
+      const count = meta.length / 4;
+      const array = new Float32Array(count);
+      for (let i = 0; i < count; i++) {
+        array[i] = view.getFloat32(i * 4, true);
+      }
+      return array;
+    }
 
-function updatePointCloud(buffer) {
-  if (!pointCloud || !buffer) return;
+    function setupPointCloud(buffer) {
+      geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.BufferAttribute(buffer, 3));
+      geometry.setDrawRange(0, buffer.length / 3);
 
-  const scaled = new Float32Array(buffer.length);
-  for (let i = 0; i < buffer.length; i++) {
-    scaled[i] = buffer[i] * FRAME_SCALE;
-  }
+      material = new THREE.PointsMaterial({
+        size: 0.01,
+        color: 0xff3333,
+        opacity: 1.0,
+        depthTest: false,
+        depthWrite: false
+      });
 
-  const existing = pointCloud.geometry.attributes.position.array;
-  if (scaled.length !== existing.length) {
-    const newGeometry = new THREE.BufferGeometry();
-    newGeometry.setAttribute("position", new THREE.BufferAttribute(scaled, 3));
-    pointCloud.geometry.dispose();
-    pointCloud.geometry = newGeometry;
-  } else {
-    pointCloud.geometry.attributes.position.array.set(scaled);
-    pointCloud.geometry.attributes.position.needsUpdate = true;
-  }
-  pointCloud.geometry.setDrawRange(0, scaled.length / 3);
-}
+      pointCloud = new THREE.Points(geometry, material);
+      scene.add(pointCloud);
+    }
 
-let lastFrameTime = 0;
-const targetFPS = 60;
-const frameDuration = 1000 / targetFPS;
+    function updatePointCloud(buffer) {
+      const existing = pointCloud.geometry.attributes.position.array;
+      if (buffer.length !== existing.length) {
+        const newGeometry = new THREE.BufferGeometry();
+        newGeometry.setAttribute("position", new THREE.BufferAttribute(buffer, 3));
+        pointCloud.geometry.dispose();
+        pointCloud.geometry = newGeometry;
+      } else {
+        pointCloud.geometry.attributes.position.array.set(buffer);
+        pointCloud.geometry.attributes.position.needsUpdate = true;
+      }
+      pointCloud.geometry.setDrawRange(0, buffer.length / 3);
+    }
 
-function animate(timestamp) {
-  requestAnimationFrame(animate);
+    let lastFrameTime = 0;
+    const targetFPS = 60;
+    const frameDuration = 1000 / targetFPS;
 
-  if (timestamp - lastFrameTime < frameDuration) return;
-  lastFrameTime = timestamp;
+    function animate(timestamp = 0) {
+      requestAnimationFrame(animate);
+      if (timestamp - lastFrameTime < frameDuration) return;
+      lastFrameTime = timestamp;
 
-  if (!geometry || frameOrder.length === 0 || currentFrame === null) return;
+      const buffer = readFrame(frames[currentFrame]);
+      if (buffer) updatePointCloud(buffer);
 
-  const currentIndex = frameOrder.indexOf(currentFrame);
-  let nextIndex = currentIndex + direction;
+      currentFrame += direction;
+      if (currentFrame >= frames.length || currentFrame < 0) {
+        direction *= -1;
+        currentFrame += direction;
+      }
 
-  if (nextIndex >= frameOrder.length || nextIndex < 0) {
-    direction *= -1;
-    nextIndex = currentIndex + direction;
-  }
+      renderer.render(scene, camera);
+    }
 
-  currentFrame = frameOrder[nextIndex];
-  const buffer = frameData[currentFrame];
-  if (buffer) updatePointCloud(buffer);
+    function setupTyping() {
+      const sentences = ["EXIST to evolve", "evolve to EXIST", "arriving...", ""];
+      const sizer = document.getElementById("sizer");
+      const heroType = document.getElementById("hero-type");
+      const span = document.querySelector("#hero-type span");
+      if (!sizer || !heroType || !span) return;
 
-  renderer.render(scene, camera);
-}
+      let maxWidth = 0;
+      sentences.forEach(text => {
+        sizer.textContent = text;
+        const width = sizer.offsetWidth;
+        if (width > maxWidth) maxWidth = width;
+      });
 
-function setupTyping() {
-  const sentences = ["EXIST to evolve", "evolve to EXIST", "arriving...", ""];
-  const sizer = document.getElementById("sizer");
-  const heroType = document.getElementById("hero-type");
-  const span = document.querySelector("#hero-type span");
-  if (!sizer || !heroType || !span) return;
+      heroType.style.width = `${maxWidth}px`;
 
-  let maxWidth = 0;
-  sentences.forEach(text => {
-    sizer.textContent = text;
-    const width = sizer.offsetWidth;
-    if (width > maxWidth) maxWidth = width;
-  });
+      const startTyping = () => {
+        span.textContent = "";
+        const theater = window.theaterJS();
+        theater
+          .addActor("hero-type", {
+            speed: 0.9,
+            accuracy: 0.97,
+            element: span
+          })
+          .addScene("hero-type:EXIST to evolve", 1000)
+          .addScene("hero-type:evolve to EXIST", 1000)
+          .addScene("hero-type:arriving...", 1000)
+          .addScene("hero-type:", 1000)
+          .addScene(() => startTyping())
+          .play();
+      };
 
-  heroType.style.width = `${maxWidth}px`;
-
-  const startTyping = () => {
-    span.textContent = "";
-    const theater = window.theaterJS();
-    theater
-      .addActor("hero-type", {
-        speed: 0.9,
-        accuracy: 0.97,
-        element: span
-      })
-      .addScene("hero-type:EXIST to evolve", 1000)
-      .addScene("hero-type:evolve to EXIST", 1000)
-      .addScene("hero-type:arriving...", 1000)
-      .addScene("hero-type:", 1000)
-      .addScene(() => startTyping())
-      .play();
-  };
-
-  if (window.theaterJS) {
-    startTyping();
-  } else {
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
-    script.async = true;
-    script.onload = startTyping;
-    document.body.appendChild(script);
-  }
-}
-</script>
+      if (window.theaterJS) {
+        startTyping();
+      } else {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
+        script.async = true;
+        script.onload = startTyping;
+        document.body.appendChild(script);
+      }
+    }
+  </script>
 </body>
 </html>
