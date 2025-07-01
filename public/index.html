@@ -93,7 +93,6 @@
 
     init();
     loadFramesInBackground();
-    animate();
     setupTyping();
 
     function init() {
@@ -113,24 +112,26 @@
       });
     }
 
+    let framesLoaded = 0;
+
     function loadFramesInBackground() {
       for (let i = 1; i <= maxFrames; i++) {
         const filename = `frames/frame.${i.toString().padStart(4, '0')}.0.json`;
+
         fetch(filename)
           .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
           .then(data => {
             const array = new Float32Array(data);
-
             frameData[i] = array;
+            frameOrder.push(i);
+            framesLoaded++;
 
-            if (!frameOrder.includes(i)) {
-              frameOrder.push(i);
+            // ✅ When all frames are loaded, initialize everything
+            if (framesLoaded === maxFrames) {
               frameOrder.sort((a, b) => a - b);
-            }
-
-            if (!pointCloud && frameOrder.length === 10) {
-              currentFrame = i;
-              setupPointCloud(array);
+              currentFrame = frameOrder[0];
+              setupPointCloud(frameData[currentFrame]);
+              animate(); // 👈 Start animation only here
             }
           })
           .catch(err => console.warn(`Failed to load ${filename}`, err));
