@@ -120,9 +120,15 @@
           .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
           .then(data => {
             const array = new Float32Array(data);
+
             frameData[i] = array;
-            frameOrder.push(i);
-            if (!pointCloud && frameOrder.length === 1) {
+
+            if (!frameOrder.includes(i)) {
+              frameOrder.push(i);
+              frameOrder.sort((a, b) => a - b);
+            }
+
+            if (!pointCloud && frameOrder.length === 10) {
               currentFrame = i;
               setupPointCloud(array);
             }
@@ -133,8 +139,8 @@
 
     function setupPointCloud(buffer) {
       geometry = new THREE.BufferGeometry();
-      geometry.setAttribute("position", new THREE.BufferAttribute(buffer, 599));
-      geometry.setDrawRange(0, buffer.length / 599);
+      geometry.setAttribute("position", new THREE.BufferAttribute(buffer, 3));
+      geometry.setDrawRange(0, buffer.length / 3);
 
       material = new THREE.PointsMaterial({
         size: 0.01,
