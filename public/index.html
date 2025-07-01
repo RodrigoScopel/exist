@@ -91,15 +91,17 @@
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
 
     let scene, camera, renderer, pointCloud, geometry, material;
+    let buffers = [];
+    let index = [];
     let currentFrame = 0;
     let direction = 1;
-    let buffer, index, frameCount;
     const targetFPS = 60;
     const frameDuration = 1000 / targetFPS;
     let lastTime = 0;
+    const CHUNK_COUNT = 5; // Update if using more or fewer chunks
 
     init();
-    loadData();
+    loadChunks();
     setupTyping();
 
     function init() {
@@ -118,19 +120,25 @@
       });
     }
 
-    async function loadData() {
-      const [binRes, indexRes] = await Promise.all([
-        fetch("frames/combined.bin"),
-        fetch("frames/index.json")
-      ]);
+    async function loadChunks() {
+      for (let i = 0; i < CHUNK_COUNT; i++) {
+        const [binRes, idxRes] = await Promise.all([
+          fetch(`frames/combined_${i}.bin`),
+          fetch(`frames/index_${i}.json`)
+        ]);
 
-      buffer = await binRes.arrayBuffer();
-      index = await indexRes.json();
-      frameCount = index.length;
+        const bin = await binRes.arrayBuffer();
+        const idx = await idxRes.json();
+        buffers.push(bin);
+        index.push(...idx.map(entry => ({ ...entry, bufferIndex: i })));
+      }
 
-      const firstView = new Float32Array(buffer, index[0].offset, index[0].length / 4);
-      setupPointCloud(firstView);
-      requestAnimationFrame(animate);
+      if (index.length > 0) {
+        const first = index[0];
+        const array = new Float32Array(buffers[first.bufferIndex], first.offset, first.length / 4);
+        setupPointCloud(array);
+        requestAnimationFrame(animate);
+      }
     }
 
     function setupPointCloud(positionArray) {
@@ -149,17 +157,18 @@
 
     function animate(timestamp) {
       requestAnimationFrame(animate);
-      if (!buffer || !index || timestamp - lastTime < frameDuration) return;
+      if (!buffers.length || index.length === 0) return;
+      if (timestamp - lastTime < frameDuration) return;
       lastTime = timestamp;
 
       currentFrame += direction;
-      if (currentFrame >= frameCount || currentFrame < 0) {
+      if (currentFrame >= index.length || currentFrame < 0) {
         direction *= -1;
         currentFrame += direction;
       }
 
-      const { offset, length } = index[currentFrame];
-      const array = new Float32Array(buffer, offset, length / 4);
+      const { offset, length, bufferIndex } = index[currentFrame];
+      const array = new Float32Array(buffers[bufferIndex], offset, length / 4);
 
       if (array.length !== pointCloud.geometry.attributes.position.count * 3) {
         const newGeometry = new THREE.BufferGeometry();
