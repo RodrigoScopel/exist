@@ -194,27 +194,46 @@
       pointCloud.geometry.setDrawRange(0, buffer.length / 3);
     }
 
-    function animate() {
-      setTimeout(() => requestAnimationFrame(animate), 33); // ~30fps
+    let lastFrameTime = 0;
+const targetFPS = 60;
+const frameDuration = 1000 / targetFPS;
 
-      if (!geometry || frameOrder.length === 0 || currentFrame === null) return;
+function animate(timestamp) {
+  requestAnimationFrame(animate);
 
-      if (!animationStarted && framesLoaded >= 50) animationStarted = true;
-      if (!animationStarted) return;
+  if (timestamp - lastFrameTime < frameDuration) return;
+  lastFrameTime = timestamp;
 
-      const currentIndex = frameOrder.indexOf(currentFrame);
-      let nextIndex = currentIndex + direction;
-      if (nextIndex >= frameOrder.length || nextIndex < 0) {
-        direction *= -1;
-        nextIndex = currentIndex + direction;
-      }
+  if (!geometry || frameOrder.length === 0 || currentFrame === null) return;
 
-      currentFrame = frameOrder[nextIndex];
-      const buffer = frameData[currentFrame];
-      if (buffer) updatePointCloud(buffer);
-
+  if (!animationStarted && framesLoaded < maxFrames) {
+    const nextFrame = frameOrder.find(f => f > currentFrame);
+    if (nextFrame && frameData[nextFrame]) {
+      currentFrame = nextFrame;
+      updatePointCloud(frameData[currentFrame]);
       renderer.render(scene, camera);
     }
+    return;
+  }
+
+  if (!animationStarted && framesLoaded === maxFrames) {
+    animationStarted = true;
+  }
+
+  const currentIndex = frameOrder.indexOf(currentFrame);
+  let nextIndex = currentIndex + direction;
+
+  if (nextIndex >= frameOrder.length || nextIndex < 0) {
+    direction *= -1;
+    nextIndex = currentIndex + direction;
+  }
+
+  currentFrame = frameOrder[nextIndex];
+  const buffer = frameData[currentFrame];
+  if (buffer) updatePointCloud(buffer);
+
+  renderer.render(scene, camera);
+}
 
     function setupTyping() {
       const sentences = ["EXIST to evolve", "evolve to EXIST", "arriving...", ""];
