@@ -43,8 +43,8 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
 
-    const TOTAL_CHUNKS =42;
-    const INITIAL_CHUNKS = 1;
+    const TOTAL_CHUNKS = 42;
+    const INITIAL_CHUNKS = 3;
     const START_FRAME = 10;
 
     let scene, camera, renderer, pointCloud;
@@ -88,8 +88,12 @@
         requestAnimationFrame(animate);
       }
 
-      for (let i = INITIAL_CHUNKS; i < TOTAL_CHUNKS; i++) {
-        loadChunk(i); // async in background
+      loadRemainingChunks(INITIAL_CHUNKS);
+    }
+
+    async function loadRemainingChunks(start) {
+      for (let i = start; i < TOTAL_CHUNKS; i++) {
+        await loadChunk(i);
       }
     }
 
