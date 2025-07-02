@@ -49,6 +49,7 @@
     let currentFrame = 0;
     let direction = 1;
     let lastTime = 0;
+    let animationReady = false;
     let animationStarted = false;
     const targetFPS = 60;
     const frameDuration = 1000 / targetFPS;
@@ -56,14 +57,13 @@
     const GZ_PATH = 'frames/combined_0.bin.gz';
     const INDEX_PATH = 'frames/index_0.json';
     const STATIC_PATH = 'frames/static.json';
-    const TOTAL_SIZE_ESTIMATE = 40 * 1024 * 1024; // 40 MB expected .gz size
+    const TOTAL_SIZE_ESTIMATE = 40 * 1024 * 1024; // 40MB
     let loadedBytes = 0;
-    let staticShown = false;
 
     init();
-    loadStaticFrame();
-    loadCompressedWithProgress();
     setupTyping();
+    loadStaticFrame(); // load immediately on page load
+    loadCompressedWithProgress();
 
     function init() {
       scene = new THREE.Scene();
@@ -85,7 +85,6 @@
         const json = await res.json();
         const array = new Float32Array(json);
         setupPointCloud(array);
-        staticShown = true;
       } catch (e) {
         console.error('❌ Failed to load static frame:', e);
       }
@@ -107,9 +106,9 @@
             chunks.push(value);
             loadedBytes += value.length;
 
-            const percent = (loadedBytes / TOTAL_SIZE_ESTIMATE) * 100;
-            if (!animationStarted && percent >= 50) {
-              console.log("✅ 50% loaded, waiting for full decompression...");
+            if (!animationStarted && loadedBytes >= TOTAL_SIZE_ESTIMATE / 2) {
+              console.log("✅ 50% loaded, proceed to decode and animate");
+              // continue decoding and animating once fully loaded
             }
           }
           done = readerDone;
@@ -124,11 +123,18 @@
 
         buffer = fflate.decompressSync(combined).buffer;
         console.log("✅ Full .gz loaded and decompressed");
+        animationReady = true;
+        startAnimation();
+      } catch (e) {
+        console.error('❌ Failed to load .gz file:', e);
+      }
+    }
+
+    function startAnimation() {
+      if (!animationStarted && animationReady) {
         animationStarted = true;
         currentFrame = 0;
         requestAnimationFrame(animate);
-      } catch (e) {
-        console.error('❌ Failed to load .gz file:', e);
       }
     }
 
