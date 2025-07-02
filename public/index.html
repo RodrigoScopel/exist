@@ -83,7 +83,7 @@
 
     async function loadStaticFrame() {
       try {
-        const res = await fetch('frames/static_frame.json');
+        const res = await fetch('frames/static.json');
         const data = await res.json();
         const array = new Float32Array(data);
         setupPointCloud(array);
