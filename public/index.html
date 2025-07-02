@@ -142,6 +142,7 @@
           const first = index[0];
           const array = safeGetFloatArray(buffers[first.bufferIndex], first);
           if (!array) {
+            console.log(`✅ Loaded bin chunk ${i} (${bin.byteLength} bytes), index size: ${idx.length}`);
             console.error("❌ Failed to parse initial frame.");
             return;
           }
@@ -149,6 +150,7 @@
           requestAnimationFrame(animate);
         }
       } catch (err) {
+        console.log(`✅ Loaded bin chunk ${i} (${bin.byteLength} bytes), index size: ${idx.length}`);
         console.error("❌ Chunk loading error:", err);
       }
     }
