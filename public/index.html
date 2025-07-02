@@ -98,9 +98,8 @@
     const targetFPS = 60;
     const frameDuration = 1000 / targetFPS;
     let lastTime = 0;
-
     const CHUNK_COUNT = 5;
-    const BASE_URL = "https://cdn.jsdelivr.net/gh/RodrigoScopel/exist@main/public/frames";
+    const START_FRAME = 10;
 
     init();
     loadChunks();
@@ -122,46 +121,46 @@
       });
     }
 
+    function safeGetFloatArray(entry) {
+      const { offset, length, bufferIndex } = entry;
+      const buffer = buffers[bufferIndex];
+
+      if (!buffer || offset + length > buffer.byteLength) {
+        console.warn("⚠️ Frame out of range:", entry);
+        return null;
+      }
+
+      return new Float32Array(buffer, offset, length / 4);
+    }
+
     async function loadChunks() {
       try {
         for (let i = 0; i < CHUNK_COUNT; i++) {
           const [binRes, idxRes] = await Promise.all([
-          fetch(`${BASE_URL}/combined_${i}.bin`),
-          fetch(`${BASE_URL}/index_${i}.json`)
+            fetch(`frames/combined_${i}.bin`),
+            fetch(`frames/index_${i}.json`)
           ]);
 
           const bin = await binRes.arrayBuffer();
           const idx = await idxRes.json();
-
-          console.log(`✅ Chunk ${i}: Loaded ${bin.byteLength} bytes`);
           buffers.push(bin);
-
-          index.push(
-            ...idx.map(entry => ({
-              ...entry,
-              bufferIndex: i,
-              bufferSize: bin.byteLength
-            }))
-          );
+          index.push(...idx.map(entry => ({ ...entry, bufferIndex: i, bufferSize: bin.byteLength })));
+          console.log(`✅ Chunk ${i}: Loaded ${bin.byteLength} bytes`);
         }
 
-        const first = index[0];
-        const firstArray = safeGetFloatArray(first);
-        if (!firstArray) throw new Error("Failed to parse initial frame.");
-        setupPointCloud(firstArray);
-        requestAnimationFrame(animate);
+        if (index.length > START_FRAME) {
+          const first = index[START_FRAME];
+          const array = safeGetFloatArray(first);
+
+          if (!array) throw new Error("❌ Failed to parse initial frame.");
+
+          setupPointCloud(array);
+          currentFrame = START_FRAME;
+          requestAnimationFrame(animate);
+        }
       } catch (err) {
         console.error("❌ Failed to load chunks:", err);
       }
-    }
-
-    function safeGetFloatArray(frame) {
-      const { offset, length, bufferIndex, bufferSize } = frame;
-      if (offset + length > bufferSize) {
-        console.warn("⚠️ Frame out of range:", frame);
-        return null;
-      }
-      return new Float32Array(buffers[bufferIndex], offset, length / 4);
     }
 
     function setupPointCloud(positionArray) {
@@ -190,8 +189,8 @@
         currentFrame += direction;
       }
 
-      const frame = index[currentFrame];
-      const array = safeGetFloatArray(frame);
+      const entry = index[currentFrame];
+      const array = safeGetFloatArray(entry);
       if (!array) return;
 
       if (array.length !== pointCloud.geometry.attributes.position.count * 3) {
@@ -212,7 +211,10 @@
       const sizer = document.getElementById("sizer");
       const span = document.querySelector("#hero-type span");
 
-      if (!span || !sizer) return;
+      if (!span || !sizer) {
+        console.error("❌ Missing text elements");
+        return;
+      }
 
       let maxWidth = 0;
       sentences.forEach(text => {
