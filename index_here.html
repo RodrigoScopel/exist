@@ -74,6 +74,7 @@
         bottom: 1rem;
         right: 0;
       }
+
       #sizer {
         font-size: 1.4rem;
         padding: 1rem;
@@ -97,16 +98,11 @@
     const targetFPS = 60;
     const frameDuration = 1000 / targetFPS;
     let lastTime = 0;
-    const CHUNK_COUNT = 5;
+    const CHUNK_COUNT = 5; // Update if using more or fewer chunks
 
     init();
     loadChunks();
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", setupTyping);
-    } else {
-      setupTyping();
-    }
+    setupTyping();
 
     function init() {
       scene = new THREE.Scene();
@@ -125,40 +121,24 @@
     }
 
     async function loadChunks() {
-      try {
-        for (let i = 0; i < CHUNK_COUNT; i++) {
-          const [binRes, idxRes] = await Promise.all([
-            fetch(`frames/combined_${i}.bin`),
-            fetch(`frames/index_${i}.json`)
-          ]);
+      for (let i = 0; i < CHUNK_COUNT; i++) {
+        const [binRes, idxRes] = await Promise.all([
+          fetch(`frames/combined_${i}.bin`),
+          fetch(`frames/index_${i}.json`)
+        ]);
 
-          const bin = await binRes.arrayBuffer();
-          const idx = await idxRes.json();
-          buffers.push(bin);
-          index.push(...idx.map(entry => ({ ...entry, bufferIndex: i, bufferSize: bin.byteLength })));
-        }
-
-        if (index.length > 0) {
-          const first = index[0];
-          const array = safeGetFloatArray(buffers[first.bufferIndex], first);
-          if (!array) {
-            console.error("❌ Failed to parse initial frame.");
-            return;
-          }
-          setupPointCloud(array);
-          requestAnimationFrame(animate);
-        }
-      } catch (err) {
-        console.error("❌ Chunk loading error:", err);
+        const bin = await binRes.arrayBuffer();
+        const idx = await idxRes.json();
+        buffers.push(bin);
+        index.push(...idx.map(entry => ({ ...entry, bufferIndex: i })));
       }
-    }
 
-    function safeGetFloatArray(buffer, { offset, length, bufferSize }) {
-      if (offset + length > bufferSize) {
-        console.warn("⚠️ Frame out of range:", { offset, length, bufferSize });
-        return null;
+      if (index.length > 0) {
+        const first = index[0];
+        const array = new Float32Array(buffers[first.bufferIndex], first.offset, first.length / 4);
+        setupPointCloud(array);
+        requestAnimationFrame(animate);
       }
-      return new Float32Array(buffer, offset, length / 4);
     }
 
     function setupPointCloud(positionArray) {
@@ -187,9 +167,8 @@
         currentFrame += direction;
       }
 
-      const { offset, length, bufferIndex, bufferSize } = index[currentFrame];
-      const array = safeGetFloatArray(buffers[bufferIndex], { offset, length, bufferSize });
-      if (!array) return;
+      const { offset, length, bufferIndex } = index[currentFrame];
+      const array = new Float32Array(buffers[bufferIndex], offset, length / 4);
 
       if (array.length !== pointCloud.geometry.attributes.position.count * 3) {
         const newGeometry = new THREE.BufferGeometry();
@@ -205,14 +184,10 @@
     }
 
     function setupTyping() {
+      const sentences = ["EXIST to evolve", "evolve to EXIST", "arriving...", ""];
       const sizer = document.getElementById("sizer");
       const span = document.querySelector("#hero-type span");
-      if (!sizer || !span) {
-        console.warn("⚠️ Typing animation failed: DOM elements not found.");
-        return;
-      }
 
-      const sentences = ["EXIST to evolve", "evolve to EXIST", "arriving...", ""];
       let maxWidth = 0;
       sentences.forEach(text => {
         sizer.textContent = text;
