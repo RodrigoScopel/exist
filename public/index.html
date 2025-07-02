@@ -49,20 +49,20 @@
     let currentFrame = 0;
     let direction = 1;
     let lastTime = 0;
+    let animationStarted = false;
     const targetFPS = 60;
     const frameDuration = 1000 / targetFPS;
+
     const GZ_PATH = 'frames/combined_0.bin.gz';
     const INDEX_PATH = 'frames/index_0.json';
     const STATIC_PATH = 'frames/static.json';
-    let animationStarted = false;
+    const TOTAL_SIZE_ESTIMATE = 40 * 1024 * 1024; // 40 MB expected .gz size
+    let loadedBytes = 0;
+    let staticShown = false;
 
     init();
     loadStaticFrame();
-    preloadHalfGZ().then(() => {
-      currentFrame = 0;
-      requestAnimationFrame(animate);
-      preloadRestOfGZ(); // Load the remaining bytes in background
-    });
+    loadCompressedWithProgress();
     setupTyping();
 
     function init() {
@@ -85,43 +85,50 @@
         const json = await res.json();
         const array = new Float32Array(json);
         setupPointCloud(array);
+        staticShown = true;
       } catch (e) {
         console.error('❌ Failed to load static frame:', e);
       }
     }
 
-    async function preloadHalfGZ() {
+    async function loadCompressedWithProgress() {
       try {
-        const head = await fetch(GZ_PATH, { method: 'HEAD' });
-        const size = parseInt(head.headers.get('Content-Length'));
-        const half = Math.floor(size / 2);
-
-        const response = await fetch(GZ_PATH, {
-          headers: { 'Range': `bytes=0-${half}` }
-        });
-        const partial = new Uint8Array(await response.arrayBuffer());
-        const decompressed = fflate.decompressSync(partial);
-
-        buffer = decompressed.buffer;
-
         const indexRes = await fetch(INDEX_PATH);
         index = await indexRes.json();
-        console.log('✅ First 50% of .gz loaded');
 
-      } catch (e) {
-        console.error('❌ Error loading half of .gz:', e);
-      }
-    }
+        const res = await fetch(GZ_PATH);
+        const reader = res.body.getReader();
+        const chunks = [];
+        let done = false;
 
-    async function preloadRestOfGZ() {
-      try {
-        const response = await fetch(GZ_PATH);
-        const full = new Uint8Array(await response.arrayBuffer());
-        buffer = fflate.decompressSync(full).buffer;
-        console.log('✅ Full .gz loaded');
+        while (!done) {
+          const { value, done: readerDone } = await reader.read();
+          if (value) {
+            chunks.push(value);
+            loadedBytes += value.length;
+
+            const percent = (loadedBytes / TOTAL_SIZE_ESTIMATE) * 100;
+            if (!animationStarted && percent >= 50) {
+              console.log("✅ 50% loaded, waiting for full decompression...");
+            }
+          }
+          done = readerDone;
+        }
+
+        const combined = new Uint8Array(loadedBytes);
+        let offset = 0;
+        for (const chunk of chunks) {
+          combined.set(chunk, offset);
+          offset += chunk.length;
+        }
+
+        buffer = fflate.decompressSync(combined).buffer;
+        console.log("✅ Full .gz loaded and decompressed");
         animationStarted = true;
+        currentFrame = 0;
+        requestAnimationFrame(animate);
       } catch (e) {
-        console.error('❌ Error loading full .gz:', e);
+        console.error('❌ Failed to load .gz file:', e);
       }
     }
 
@@ -140,11 +147,9 @@
 
     function animate(timestamp) {
       requestAnimationFrame(animate);
-      if (!buffer || index.length === 0) return;
+      if (!buffer || !animationStarted || index.length === 0) return;
       if (timestamp - lastTime < frameDuration) return;
       lastTime = timestamp;
-
-      if (!animationStarted) return; // hold on static frame
 
       currentFrame += direction;
       if (currentFrame >= index.length || currentFrame < 0) {
@@ -182,9 +187,9 @@
       });
       document.getElementById("hero-type").style.width = `${maxWidth}px`;
 
-      const theater = window.theaterJS();
       const startTyping = () => {
         span.textContent = "";
+        const theater = window.theaterJS();
         theater
           .addActor("hero-type", { speed: 0.9, accuracy: 0.97, element: span })
           .addScene("hero-type:EXIST to evolve", 1000)
