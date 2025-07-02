@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <title>EXIST Landing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preload" href="/fonts/integralcf-bold.otf" as="font" type="font/otf" crossorigin />
   <script src="https://cdn.jsdelivr.net/npm/fflate@0.7.4/umd/index.min.js"></script>
+  <link rel="preload" href="/fonts/integralcf-bold.otf" as="font" type="font/otf" crossorigin />
   <style>
     @font-face {
       font-family: 'IntegralCF-Bold';
@@ -43,8 +43,12 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
 
-    const TOTAL_CHUNKS = 10;
-    const START_FRAME = 10;
+    const TOTAL_CHUNKS = 1;
+    const CHUNK_SIZE_MB = 4;
+    const PRELOAD_MB = 20;
+    const CHUNKS_TO_PRELOAD = PRELOAD_MB / CHUNK_SIZE_MB;
+    const START_FRAME = 1;
+
     let scene, camera, renderer, pointCloud;
     let buffers = [];
     let index = [];
@@ -53,10 +57,11 @@
     let lastTime = 0;
     const targetFPS = 60;
     const frameDuration = 1000 / targetFPS;
-    let staticFrameShown = false;
     let animationStarted = false;
+    let forwardLoopComplete = false;
 
     init();
+    loadStaticFrame();
     loadChunks();
     setupTyping();
 
@@ -74,118 +79,96 @@
       });
     }
 
-    async function loadChunks() {
-      const loadPromises = [];
-
-      for (let i = 0; i < TOTAL_CHUNKS; i++) {
-        loadPromises.push(loadChunk(i));
-
-        // After half the chunks are loaded, show the static frame
-        if (i + 1 === Math.ceil(TOTAL_CHUNKS / 2)) {
-          Promise.all(loadPromises).then(() => {
-            if (!staticFrameShown) {
-              showStaticFrame();
-              staticFrameShown = true;
-            }
-          });
-        }
-      }
-
-      // Continue loading the rest
-      await Promise.all(loadPromises);
-
-      // Start animation only once all chunks are loaded and static frame has been shown
-      if (!animationStarted) {
-        startAnimation();
-      }
+    async function loadStaticFrame() {
+      const res = await fetch("frames/static.json");
+      const json = await res.json();
+      const array = new Float32Array(json);
+      setupPointCloud(array);
     }
 
-    async function loadChunk(i) {
-      try {
+    async function loadChunks() {
+      for (let i = 0; i < TOTAL_CHUNKS; i++) {
         const [gzRes, idxRes] = await Promise.all([
           fetch(`frames/combined_${i}.bin.gz`),
           fetch(`frames/index_${i}.json`)
         ]);
-        if (!gzRes.ok || !idxRes.ok) return console.warn(`⚠️ Chunk ${i} not found`);
+
         const compressed = new Uint8Array(await gzRes.arrayBuffer());
         const decompressed = fflate.decompressSync(compressed);
         const idx = await idxRes.json();
         buffers[i] = decompressed.buffer;
+
         index.push(...idx.map(e => ({ ...e, bufferIndex: i, bufferSize: decompressed.byteLength })));
-        console.log(`✅ Chunk ${i}: ${decompressed.byteLength} bytes`);
-      } catch (e) {
-        console.warn(`❌ Chunk ${i} failed:`, e);
+
+        // Once preloading threshold is reached, start animation
+        if (!animationStarted && (i + 1) >= CHUNKS_TO_PRELOAD) {
+          animationStarted = true;
+          const entry = index[START_FRAME];
+          const array = getFloatArray(entry);
+          updatePointCloud(array);
+          currentFrame = START_FRAME;
+          requestAnimationFrame(animate);
+        }
       }
     }
 
-    async function showStaticFrame() {
-      try {
-        const res = await fetch("frames/static.json");
-        if (!res.ok) throw new Error("Static frame JSON not found");
-        const data = await res.json();
-        const array = new Float32Array(data);
-        setupPointCloud(array);
-      } catch (err) {
-        console.warn("⚠️ Static frame failed:", err);
-      }
-    }
-
-    function startAnimation() {
-      if (index.length > START_FRAME) {
-        const first = index[START_FRAME];
-        const array = safeGetFloatArray(first);
-        if (!array) throw new Error("❌ Failed to parse initial frame.");
-        setupPointCloud(array);
-        currentFrame = START_FRAME;
-        animationStarted = true;
-        requestAnimationFrame(animate);
-      }
-    }
-
-    function safeGetFloatArray(entry) {
+    function getFloatArray(entry) {
       const { offset, length, bufferIndex } = entry;
       const buffer = buffers[bufferIndex];
-      if (!buffer || offset + length > buffer.byteLength) {
-        console.warn("⚠️ Frame out of range:", entry);
-        return null;
-      }
+      if (!buffer || offset + length > buffer.byteLength) return null;
       return new Float32Array(buffer, offset, length / 4);
     }
 
     function setupPointCloud(positionArray) {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.BufferAttribute(positionArray, 3));
-      const material = new THREE.PointsMaterial({ size: 0.01, color: 0xff3333, depthTest: false, depthWrite: false });
-      if (pointCloud) {
-        scene.remove(pointCloud);
-        pointCloud.geometry.dispose();
-      }
+      const material = new THREE.PointsMaterial({
+        size: 0.01,
+        color: 0xff3333,
+        depthTest: false,
+        depthWrite: false
+      });
       pointCloud = new THREE.Points(geometry, material);
       scene.add(pointCloud);
     }
 
-    function animate(timestamp) {
-      requestAnimationFrame(animate);
-      if (timestamp - lastTime < frameDuration || !buffers.length || !index.length) return;
-      lastTime = timestamp;
-      currentFrame += direction;
-      if (currentFrame >= index.length || currentFrame < 0) {
-        direction *= -1;
-        currentFrame += direction;
-      }
-      const entry = index[currentFrame];
-      const array = safeGetFloatArray(entry);
-      if (!array) return;
-
+    function updatePointCloud(array) {
       const position = pointCloud.geometry.attributes.position;
       if (array.length !== position.count * 3) {
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute("position", new THREE.BufferAttribute(array, 3));
+        const newGeometry = new THREE.BufferGeometry();
+        newGeometry.setAttribute("position", new THREE.BufferAttribute(array, 3));
         pointCloud.geometry.dispose();
-        pointCloud.geometry = geometry;
+        pointCloud.geometry = newGeometry;
       } else {
         position.array.set(array);
         position.needsUpdate = true;
+      }
+    }
+
+    function animate(timestamp) {
+      requestAnimationFrame(animate);
+      if (!animationStarted || !buffers.length || !index.length) return;
+      if (timestamp - lastTime < frameDuration) return;
+      lastTime = timestamp;
+
+      const entry = index[currentFrame];
+      const array = getFloatArray(entry);
+      if (!array) return;
+
+      updatePointCloud(array);
+
+      currentFrame += direction;
+      if (currentFrame >= index.length) {
+        if (!forwardLoopComplete) {
+          forwardLoopComplete = true;
+          direction = -1;
+          currentFrame = index.length - 2;
+        } else {
+          currentFrame = index.length - 1;
+        }
+      } else if (currentFrame < 0) {
+        direction = 1;
+        currentFrame = 1;
       }
 
       renderer.render(scene, camera);
@@ -195,7 +178,7 @@
       const sentences = ["EXIST to evolve", "evolve to EXIST", "arriving...", ""];
       const sizer = document.getElementById("sizer");
       const span = document.querySelector("#hero-type span");
-      if (!span || !sizer) return console.error("❌ Missing typing span or sizer");
+      if (!span || !sizer) return;
 
       let maxWidth = 0;
       sentences.forEach(text => {
