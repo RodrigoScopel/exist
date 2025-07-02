@@ -13,72 +13,25 @@
       font-weight: bold;
       font-style: normal;
     }
-
     html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-      background: black;
-      overflow: hidden;
+      margin: 0; padding: 0; height: 100%; width: 100%;
+      background: black; overflow: hidden;
       font-family: 'IntegralCF-Bold', sans-serif;
     }
-
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      display: block;
-      z-index: 0;
-    }
-
+    canvas { position: absolute; top: 0; left: 0; display: block; z-index: 0; }
     #hero-type {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      color: #ff3333;
-      font-size: 2.5rem;
-      padding: 6rem;
-      z-index: 9999;
-      white-space: nowrap;
-      overflow: hidden;
+      position: absolute; bottom: 0; right: 0;
+      color: #ff3333; font-size: 2.5rem;
+      padding: 6rem; z-index: 9999;
+      white-space: nowrap; overflow: hidden;
     }
-
-    #hero-type span {
-      display: inline-block;
-    }
-
-    #hero-type::after {
-      content: '|';
-      animation: blink 1s step-end infinite;
-      color: #ff3333;
-      margin-left: 4px;
-    }
-
-    @keyframes blink {
-      50% { opacity: 0; }
-    }
-
-    #sizer {
-      visibility: hidden;
-      position: absolute;
-      white-space: nowrap;
-      font-size: 2.5rem;
-      padding: 2rem;
-    }
-
+    #hero-type span { display: inline-block; }
+    #hero-type::after { content: '|'; animation: blink 1s step-end infinite; color: #ff3333; margin-left: 4px; }
+    @keyframes blink { 50% { opacity: 0; } }
+    #sizer { visibility: hidden; position: absolute; white-space: nowrap; font-size: 2.5rem; padding: 2rem; }
     @media (max-width: 768px) {
-      #hero-type {
-        font-size: 1.4rem;
-        padding: 1rem 0.5rem;
-        bottom: 1rem;
-        right: 0;
-      }
-
-      #sizer {
-        font-size: 1.4rem;
-        padding: 1rem;
-      }
+      #hero-type { font-size: 1.4rem; padding: 1rem 0.5rem; bottom: 1rem; }
+      #sizer { font-size: 1.4rem; padding: 1rem; }
     }
   </style>
 </head>
@@ -90,30 +43,30 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
 
-    let scene, camera, renderer, pointCloud, geometry, material;
+    const TOTAL_CHUNKS = 10;
+    const INITIAL_CHUNKS = 3;
+    const START_FRAME = 10;
+
+    let scene, camera, renderer, pointCloud;
     let buffers = [];
     let index = [];
     let currentFrame = 0;
     let direction = 1;
+    let lastTime = 0;
     const targetFPS = 60;
     const frameDuration = 1000 / targetFPS;
-    let lastTime = 0;
-    const CHUNK_COUNT = 3;
-    const START_FRAME = 0;
 
     init();
-    loadChunks();
+    loadInitialChunksAndRender();
     setupTyping();
 
     function init() {
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.8, 500);
       camera.position.z = 20;
-
       renderer = new THREE.WebGLRenderer({ alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
-
       window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
@@ -121,93 +74,83 @@
       });
     }
 
+    async function loadInitialChunksAndRender() {
+      for (let i = 0; i < INITIAL_CHUNKS; i++) {
+        await loadChunk(i);
+      }
+
+      if (index.length > START_FRAME) {
+        const first = index[START_FRAME];
+        const array = safeGetFloatArray(first);
+        if (!array) throw new Error("❌ Failed to parse initial frame.");
+        setupPointCloud(array);
+        currentFrame = START_FRAME;
+        requestAnimationFrame(animate);
+      }
+
+      for (let i = INITIAL_CHUNKS; i < TOTAL_CHUNKS; i++) {
+        loadChunk(i); // async in background
+      }
+    }
+
+    async function loadChunk(i) {
+      try {
+        const [gzRes, idxRes] = await Promise.all([
+          fetch(`frames/combined_${i}.bin.gz`),
+          fetch(`frames/index_${i}.json`)
+        ]);
+        if (!gzRes.ok || !idxRes.ok) return console.warn(`⚠️ Chunk ${i} not found`);
+        const compressed = new Uint8Array(await gzRes.arrayBuffer());
+        const decompressed = fflate.decompressSync(compressed);
+        const idx = await idxRes.json();
+        buffers[i] = decompressed.buffer;
+        index.push(...idx.map(e => ({ ...e, bufferIndex: i, bufferSize: decompressed.byteLength })));
+        console.log(`✅ Chunk ${i}: ${decompressed.byteLength} bytes`);
+      } catch (e) {
+        console.warn(`❌ Chunk ${i} failed:`, e);
+      }
+    }
+
     function safeGetFloatArray(entry) {
       const { offset, length, bufferIndex } = entry;
       const buffer = buffers[bufferIndex];
-
       if (!buffer || offset + length > buffer.byteLength) {
         console.warn("⚠️ Frame out of range:", entry);
         return null;
       }
-
       return new Float32Array(buffer, offset, length / 4);
     }
 
-    async function loadChunks() {
-      try {
-        for (let i = 0; i < CHUNK_COUNT; i++) {
-          const [gzRes, idxRes] = await Promise.all([
-            fetch(`frames/combined_${i}.bin.gz`),
-            fetch(`frames/index_${i}.json`)
-          ]);
-
-          const gzBuffer = await gzRes.arrayBuffer();
-          const decompressed = fflate.decompressSync(new Uint8Array(gzBuffer)).buffer;
-          const idx = await idxRes.json();
-
-          buffers.push(decompressed);
-          index.push(...idx.map(entry => ({
-            ...entry,
-            bufferIndex: i,
-            bufferSize: decompressed.byteLength
-          })));
-
-          console.log(`✅ Chunk ${i}: Decompressed ${decompressed.byteLength} bytes`);
-        }
-
-        if (index.length > START_FRAME) {
-          const first = index[START_FRAME];
-          const array = safeGetFloatArray(first);
-
-          if (!array) throw new Error("❌ Failed to parse initial frame.");
-
-          setupPointCloud(array);
-          currentFrame = START_FRAME;
-          requestAnimationFrame(animate);
-        }
-      } catch (err) {
-        console.error("❌ Failed to load chunks:", err);
-      }
-    }
-
     function setupPointCloud(positionArray) {
-      geometry = new THREE.BufferGeometry();
+      const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.BufferAttribute(positionArray, 3));
-      material = new THREE.PointsMaterial({
-        size: 0.01,
-        color: 0xff3333,
-        depthTest: false,
-        depthWrite: false
-      });
-
+      const material = new THREE.PointsMaterial({ size: 0.01, color: 0xff3333, depthTest: false, depthWrite: false });
       pointCloud = new THREE.Points(geometry, material);
       scene.add(pointCloud);
     }
 
     function animate(timestamp) {
       requestAnimationFrame(animate);
-      if (!buffers.length || index.length === 0) return;
-      if (timestamp - lastTime < frameDuration) return;
+      if (timestamp - lastTime < frameDuration || !buffers.length || !index.length) return;
       lastTime = timestamp;
-
       currentFrame += direction;
       if (currentFrame >= index.length || currentFrame < 0) {
         direction *= -1;
         currentFrame += direction;
       }
-
       const entry = index[currentFrame];
       const array = safeGetFloatArray(entry);
       if (!array) return;
 
-      if (array.length !== pointCloud.geometry.attributes.position.count * 3) {
-        const newGeometry = new THREE.BufferGeometry();
-        newGeometry.setAttribute("position", new THREE.BufferAttribute(array, 3));
+      const position = pointCloud.geometry.attributes.position;
+      if (array.length !== position.count * 3) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.BufferAttribute(array, 3));
         pointCloud.geometry.dispose();
-        pointCloud.geometry = newGeometry;
+        pointCloud.geometry = geometry;
       } else {
-        pointCloud.geometry.attributes.position.array.set(array);
-        pointCloud.geometry.attributes.position.needsUpdate = true;
+        position.array.set(array);
+        position.needsUpdate = true;
       }
 
       renderer.render(scene, camera);
@@ -217,21 +160,18 @@
       const sentences = ["EXIST to evolve", "evolve to EXIST", "arriving...", ""];
       const sizer = document.getElementById("sizer");
       const span = document.querySelector("#hero-type span");
-
-      if (!span || !sizer) return;
+      if (!span || !sizer) return console.error("❌ Missing typing span or sizer");
 
       let maxWidth = 0;
       sentences.forEach(text => {
         sizer.textContent = text;
-        const width = sizer.offsetWidth;
-        if (width > maxWidth) maxWidth = width;
+        maxWidth = Math.max(maxWidth, sizer.offsetWidth);
       });
-
       document.getElementById("hero-type").style.width = `${maxWidth}px`;
 
+      const theater = window.theaterJS();
       const startTyping = () => {
         span.textContent = "";
-        const theater = window.theaterJS();
         theater
           .addActor("hero-type", { speed: 0.9, accuracy: 0.97, element: span })
           .addScene("hero-type:EXIST to evolve", 1000)
@@ -242,14 +182,7 @@
           .play();
       };
 
-      if (window.theaterJS) {
-        startTyping();
-      } else {
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
-        script.onload = startTyping;
-        document.body.appendChild(script);
-      }
+      if (window.theaterJS) startTyping();
     }
   </script>
 </body>
