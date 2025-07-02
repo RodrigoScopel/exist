@@ -124,44 +124,63 @@
       });
     }
 
-    async function loadChunks() {
-      try {
-        for (let i = 0; i < CHUNK_COUNT; i++) {
-          const [binRes, idxRes] = await Promise.all([
-            fetch(`frames/combined_${i}.bin`),
-            fetch(`frames/index_${i}.json`)
-          ]);
+ async function loadChunks() {
+  try {
+    for (let i = 0; i < CHUNK_COUNT; i++) {
+      const binUrl = `frames/combined_${i}.bin`;
+      const idxUrl = `frames/index_${i}.json`;
 
-          const bin = await binRes.arrayBuffer();
-          const idx = await idxRes.json();
-          buffers.push(bin);
-          index.push(...idx.map(entry => ({ ...entry, bufferIndex: i, bufferSize: bin.byteLength })));
-        }
+      const [binRes, idxRes] = await Promise.all([
+        fetch(binUrl),
+        fetch(idxUrl)
+      ]);
 
-        if (index.length > 0) {
-          const first = index[0];
-          const array = safeGetFloatArray(buffers[first.bufferIndex], first);
-          if (!array) {
-            console.log(`✅ Loaded bin chunk ${i} (${bin.byteLength} bytes), index size: ${idx.length}`);
-            console.error("❌ Failed to parse initial frame.");
-            return;
-          }
-          setupPointCloud(array);
-          requestAnimationFrame(animate);
-        }
-      } catch (err) {
-        console.log(`✅ Loaded bin chunk ${i} (${bin.byteLength} bytes), index size: ${idx.length}`);
-        console.error("❌ Chunk loading error:", err);
+      const bin = await binRes.arrayBuffer();
+      const idx = await idxRes.json();
+
+      if (bin.byteLength === 0) {
+        console.warn(`⚠️ Chunk ${i} failed to load or is empty:`, binUrl);
+        continue;
       }
+
+      console.log(`✅ Chunk ${i}: Loaded ${bin.byteLength} bytes`);
+
+      buffers.push(bin);
+      index.push(...idx.map(entry => ({
+        ...entry,
+        bufferIndex: buffers.length - 1,
+        bufferSize: bin.byteLength
+      })));
     }
 
-    function safeGetFloatArray(buffer, { offset, length, bufferSize }) {
-      if (offset + length > bufferSize) {
-        console.warn("⚠️ Frame out of range:", { offset, length, bufferSize });
-        return null;
+    if (index.length > 0) {
+      const first = index[0];
+      const array = safeGetFloatArray(first);
+      if (array) {
+        setupPointCloud(array);
+        requestAnimationFrame(animate);
+      } else {
+        console.error("❌ Failed to parse initial frame.");
       }
-      return new Float32Array(buffer, offset, length / 4);
     }
+  } catch (err) {
+    console.error("❌ loadChunks error:", err);
+  }
+}
+
+function safeGetFloatArray(frame) {
+  try {
+    const bin = buffers[frame.bufferIndex];
+    if (!bin || frame.offset + frame.length > bin.byteLength) {
+      console.warn("⚠️ Frame out of range:", frame);
+      return null;
+    }
+    return new Float32Array(bin, frame.offset, frame.length / 4);
+  } catch (err) {
+    console.error("❌ Failed to parse frame:", err);
+    return null;
+  }
+}
 
     function setupPointCloud(positionArray) {
       geometry = new THREE.BufferGeometry();
