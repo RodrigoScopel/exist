@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GitHub Chunk Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background: black;
+      color: white;
+      font-family: monospace;
+      padding: 2rem;
+    }
+    .ok { color: #00ff88; }
+    .err { color: #ff4444; }
+  </style>
+</head>
+<body>
+  <h1>📦 GitHub Chunk Load Test</h1>
+  <p id="status">Loading...</p>
+  <script type="module">
+    const BIN_URL = "https://github.com/RodrigoScopel/exist/raw/main/public/frames/combined_0.bin";
+    const INDEX_URL = "https://github.com/RodrigoScopel/exist/raw/main/public/frames/index_0.json";
+
+    const status = document.getElementById("status");
+
+    async function testGitChunk() {
+      try {
+        const [binRes, idxRes] = await Promise.all([
+          fetch(BIN_URL),
+          fetch(INDEX_URL)
+        ]);
+
+        if (!binRes.ok || !idxRes.ok) {
+          throw new Error("Failed to fetch one or both resources.");
+        }
+
+        const buffer = await binRes.arrayBuffer();
+        const index = await idxRes.json();
+
+        const actual = buffer.byteLength;
+        const expected = index[index.length - 1].offset + index[index.length - 1].length;
+
+        const result = document.createElement("pre");
+        result.innerHTML = `📦 Actual buffer size: <span class="ok">${actual}</span>\n🏛️ Expected from index: <span class="ok">${expected}</span>`;
+
+        if (actual === expected) {
+          result.innerHTML += `\n✅ <span class="ok">MATCH: Buffer and index sizes align.</span>`;
+        } else {
+          result.innerHTML += `\n❌ <span class="err">Mismatch: Check your file upload.</span>`;
+        }
+
+        status.replaceWith(result);
+      } catch (err) {
+        status.innerHTML = `<span class="err">❌ ERROR: ${err.message}</span>`;
+        console.error(err);
+      }
+    }
+
+    testGitChunk();
+  </script>
+</body>
+</html>
