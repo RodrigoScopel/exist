@@ -1,224 +1,147 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>EXIST Landing</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preload" href="/fonts/integralcf-bold.otf" as="font" type="font/otf" crossorigin />
-  <style>
-    @font-face {
-      font-family: 'IntegralCF-Bold';
-      src: url('/fonts/integralcf-bold.otf') format('opentype');
-      font-weight: bold;
-      font-style: normal;
-    }
+<script type="module">
+  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-      background: black;
-      overflow: hidden;
-      font-family: 'IntegralCF-Bold', sans-serif;
-    }
+  let scene, camera, renderer, pointCloud, geometry, material;
+  let buffers = [];
+  let index = [];
+  let currentFrame = 0;
+  let direction = 1;
+  const targetFPS = 60;
+  const frameDuration = 1000 / targetFPS;
+  let lastTime = 0;
+  const CHUNK_COUNT = 42;
 
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      display: block;
-      z-index: 0;
-    }
+  init();
+  loadChunks();
+  setupTyping();
 
-    #hero-type {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      color: #ff3333;
-      font-size: 2.5rem;
-      padding: 6rem;
-      z-index: 9999;
-      white-space: nowrap;
-      overflow: hidden;
-      font-family: 'IntegralCF-Bold', sans-serif;
-    }
+  function init() {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.8, 500);
+    camera.position.z = 20;
 
-    #hero-type span {
-      display: inline-block;
-    }
+    renderer = new THREE.WebGLRenderer({ alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-    #hero-type::after {
-      content: '|';
-      animation: blink 1s step-end infinite;
-      color: #ff3333;
-      margin-left: 4px;
-    }
-
-    @keyframes blink {
-      50% { opacity: 0; }
-    }
-
-    #sizer {
-      visibility: hidden;
-      position: absolute;
-      white-space: nowrap;
-      font-size: 2.5rem;
-      padding: 2rem;
-    }
-
-    @media (max-width: 768px) {
-      #hero-type {
-        font-size: 1.4rem;
-        padding: 1rem 0.5rem;
-        bottom: 1rem;
-        right: 0;
-      }
-
-      #sizer {
-        font-size: 1.4rem;
-        padding: 1rem;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div id="hero-type"><span></span></div>
-  <div id="sizer"></div>
-
-  <script src="https://unpkg.com/theaterjs@latest/dist/theater.min.js" defer></script>
-  <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
-
-    let scene, camera, renderer, pointCloud, geometry, material;
-    let buffers = [];
-    let index = [];
-    let currentFrame = 0;
-    let direction = 1;
-    const targetFPS = 60;
-    const frameDuration = 1000 / targetFPS;
-    let lastTime = 0;
-    const CHUNK_COUNT = 5; // Update if using more or fewer chunks
-
-    init();
-    loadChunks();
-    setupTyping();
-
-    function init() {
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.8, 500);
-      camera.position.z = 20;
-
-      renderer = new THREE.WebGLRenderer({ alpha: true });
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(renderer.domElement);
+    });
+  }
 
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
+  async function loadChunks() {
+    for (let i = 0; i < CHUNK_COUNT; i++) {
+      const [binRes, idxRes] = await Promise.all([
+        fetch(`frames/combined_${i}.bin`),
+        fetch(`frames/index_${i}.json`)
+      ]);
+
+      const bin = await binRes.arrayBuffer();
+      const idx = await idxRes.json();
+      buffers.push(bin);
+      index.push(...idx.map(entry => ({ ...entry, bufferIndex: i })));
     }
 
-    async function loadChunks() {
-      for (let i = 0; i < CHUNK_COUNT; i++) {
-        const [binRes, idxRes] = await Promise.all([
-          fetch(`frames/combined_${i}.bin`),
-          fetch(`frames/index_${i}.json`)
-        ]);
-
-        const bin = await binRes.arrayBuffer();
-        const idx = await idxRes.json();
-        buffers.push(bin);
-        index.push(...idx.map(entry => ({ ...entry, bufferIndex: i })));
-      }
-
-      if (index.length > 0) {
-        const first = index[0];
-        const array = new Float32Array(buffers[first.bufferIndex], first.offset, first.length / 4);
+    if (index.length > 0) {
+      const first = index[0];
+      const array = safeGetFloatArray(first);
+      if (array) {
         setupPointCloud(array);
         requestAnimationFrame(animate);
+      } else {
+        console.error("❌ Failed to parse initial frame.");
       }
     }
+  }
 
-    function setupPointCloud(positionArray) {
-      geometry = new THREE.BufferGeometry();
-      geometry.setAttribute("position", new THREE.BufferAttribute(positionArray, 3));
-      material = new THREE.PointsMaterial({
-        size: 0.01,
-        color: 0xff3333,
-        depthTest: false,
-        depthWrite: false
-      });
-
-      pointCloud = new THREE.Points(geometry, material);
-      scene.add(pointCloud);
+  function safeGetFloatArray({ offset, length, bufferIndex }) {
+    const buffer = buffers[bufferIndex];
+    if (!buffer || offset + length > buffer.byteLength) {
+      console.warn("⚠️ Frame out of range:", { offset, length, bufferSize: buffer?.byteLength });
+      return null;
     }
+    return new Float32Array(buffer, offset, length / 4);
+  }
 
-    function animate(timestamp) {
-      requestAnimationFrame(animate);
-      if (!buffers.length || index.length === 0) return;
-      if (timestamp - lastTime < frameDuration) return;
-      lastTime = timestamp;
+  function setupPointCloud(positionArray) {
+    geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positionArray, 3));
+    material = new THREE.PointsMaterial({
+      size: 0.01,
+      color: 0xff3333,
+      depthTest: false,
+      depthWrite: false
+    });
 
+    pointCloud = new THREE.Points(geometry, material);
+    scene.add(pointCloud);
+  }
+
+  function animate(timestamp) {
+    requestAnimationFrame(animate);
+    if (!buffers.length || index.length === 0) return;
+    if (timestamp - lastTime < frameDuration) return;
+    lastTime = timestamp;
+
+    currentFrame += direction;
+    if (currentFrame >= index.length || currentFrame < 0) {
+      direction *= -1;
       currentFrame += direction;
-      if (currentFrame >= index.length || currentFrame < 0) {
-        direction *= -1;
-        currentFrame += direction;
-      }
-
-      const { offset, length, bufferIndex } = index[currentFrame];
-      const array = new Float32Array(buffers[bufferIndex], offset, length / 4);
-
-      if (array.length !== pointCloud.geometry.attributes.position.count * 3) {
-        const newGeometry = new THREE.BufferGeometry();
-        newGeometry.setAttribute("position", new THREE.BufferAttribute(array, 3));
-        pointCloud.geometry.dispose();
-        pointCloud.geometry = newGeometry;
-      } else {
-        pointCloud.geometry.attributes.position.array.set(array);
-        pointCloud.geometry.attributes.position.needsUpdate = true;
-      }
-
-      renderer.render(scene, camera);
     }
 
-    function setupTyping() {
-      const sentences = ["EXIST to evolve", "evolve to EXIST", "arriving...", ""];
-      const sizer = document.getElementById("sizer");
-      const span = document.querySelector("#hero-type span");
+    const { offset, length, bufferIndex } = index[currentFrame];
+    const array = safeGetFloatArray({ offset, length, bufferIndex });
+    if (!array) return;
 
-      let maxWidth = 0;
-      sentences.forEach(text => {
-        sizer.textContent = text;
-        const width = sizer.offsetWidth;
-        if (width > maxWidth) maxWidth = width;
-      });
-
-      document.getElementById("hero-type").style.width = `${maxWidth}px`;
-
-      const startTyping = () => {
-        span.textContent = "";
-        const theater = window.theaterJS();
-        theater
-          .addActor("hero-type", { speed: 0.9, accuracy: 0.97, element: span })
-          .addScene("hero-type:EXIST to evolve", 1000)
-          .addScene("hero-type:evolve to EXIST", 1000)
-          .addScene("hero-type:arriving...", 1000)
-          .addScene("hero-type:", 1000)
-          .addScene(() => startTyping())
-          .play();
-      };
-
-      if (window.theaterJS) {
-        startTyping();
-      } else {
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
-        script.onload = startTyping;
-        document.body.appendChild(script);
-      }
+    if (array.length !== pointCloud.geometry.attributes.position.count * 3) {
+      const newGeometry = new THREE.BufferGeometry();
+      newGeometry.setAttribute("position", new THREE.BufferAttribute(array, 3));
+      pointCloud.geometry.dispose();
+      pointCloud.geometry = newGeometry;
+    } else {
+      pointCloud.geometry.attributes.position.array.set(array);
+      pointCloud.geometry.attributes.position.needsUpdate = true;
     }
-  </script>
-</body>
-</html>
+
+    renderer.render(scene, camera);
+  }
+
+  function setupTyping() {
+    const sentences = ["EXIST to evolve", "evolve to EXIST", "arriving...", ""];
+    const sizer = document.getElementById("sizer");
+    const span = document.querySelector("#hero-type span");
+
+    let maxWidth = 0;
+    sentences.forEach(text => {
+      sizer.textContent = text;
+      const width = sizer.offsetWidth;
+      if (width > maxWidth) maxWidth = width;
+    });
+
+    document.getElementById("hero-type").style.width = `${maxWidth}px`;
+
+    const startTyping = () => {
+      span.textContent = "";
+      const theater = window.theaterJS();
+      theater
+        .addActor("hero-type", { speed: 0.9, accuracy: 0.97, element: span })
+        .addScene("hero-type:EXIST to evolve", 1000)
+        .addScene("hero-type:evolve to EXIST", 1000)
+        .addScene("hero-type:arriving...", 1000)
+        .addScene("hero-type:", 1000)
+        .addScene(() => startTyping())
+        .play();
+    };
+
+    if (window.theaterJS) {
+      startTyping();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/theaterjs@latest/dist/theater.min.js";
+      script.onload = startTyping;
+      document.body.appendChild(script);
+    }
+  }
+</script>
