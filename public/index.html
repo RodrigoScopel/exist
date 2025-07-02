@@ -46,6 +46,7 @@
     const TOTAL_CHUNKS = 10;
     const INITIAL_CHUNKS = 3;
     const START_FRAME = 10;
+    const STATIC_DURATION = 3000;
 
     let scene, camera, renderer, pointCloud;
     let buffers = [];
@@ -58,9 +59,11 @@
 
     init();
     loadStaticFrame().then(() => {
-      loadInitialChunksAndRender();
+      setTimeout(() => {
+        loadInitialChunksAndRender();
+        setupTyping();
+      }, STATIC_DURATION);
     });
-    setupTyping();
 
     function init() {
       scene = new THREE.Scene();
@@ -78,13 +81,13 @@
 
     async function loadStaticFrame() {
       try {
-        const res = await fetch('frames/static_frame.json');
+        const res = await fetch('frames/static.json');
         const data = await res.json();
         const array = new Float32Array(data);
         setupPointCloud(array);
         renderer.render(scene, camera);
       } catch (e) {
-        console.warn('⚠️ Static frame failed:', e);
+        console.warn("⚠️ Static frame failed:", e);
       }
     }
 
