@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <title>EXIST Landing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.jsdelivr.net/npm/fflate@0.7.4/umd/index.min.js"></script>
   <link rel="preload" href="/fonts/integralcf-bold.otf" as="font" type="font/otf" crossorigin />
+  <script src="https://cdn.jsdelivr.net/npm/fflate@0.7.4/umd/index.min.js"></script>
   <style>
     @font-face {
       font-family: 'IntegralCF-Bold';
@@ -29,6 +29,10 @@
     #hero-type::after { content: '|'; animation: blink 1s step-end infinite; color: #ff3333; margin-left: 4px; }
     @keyframes blink { 50% { opacity: 0; } }
     #sizer { visibility: hidden; position: absolute; white-space: nowrap; font-size: 2.5rem; padding: 2rem; }
+    @media (max-width: 768px) {
+      #hero-type { font-size: 1.4rem; padding: 1rem 0.5rem; bottom: 1rem; }
+      #sizer { font-size: 1.4rem; padding: 1rem; }
+    }
   </style>
 </head>
 <body>
@@ -39,18 +43,21 @@
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
 
-    const GZ_PATH = 'frames/combined.gz';
-    const INDEX_PATH = 'frames/index.json';
-    const STATIC_PATH = 'frames/static.json';
-
     let scene, camera, renderer, pointCloud;
-    let index = [], buffer = null, animationStarted = false;
-    let currentFrame = 0, direction = 1, lastTime = 0;
-    const frameDuration = 1000 / 60;
+    let buffer = null;
+    let index = [];
+    let currentFrame = 0;
+    let direction = 1;
+    let lastTime = 0;
+    const targetFPS = 60;
+    const frameDuration = 1000 / targetFPS;
 
     init();
-    preloadStaticFrame();
-    loadAndDecompress();
+    loadStaticFrame();
+    preloadCompressed().then(() => {
+      currentFrame = 0;
+      requestAnimationFrame(animate);
+    });
     setupTyping();
 
     function init() {
@@ -67,78 +74,70 @@
       });
     }
 
-    async function preloadStaticFrame() {
-      const res = await fetch(STATIC_PATH);
-      const data = await res.json();
-      const array = new Float32Array(data);
-      setupPointCloud(array);
-      renderer.render(scene, camera);
+    async function loadStaticFrame() {
+      try {
+        const res = await fetch('frames/static.json');
+        const json = await res.json();
+        const array = new Float32Array(json);
+        setupPointCloud(array);
+      } catch (e) {
+        console.error('❌ Failed to load static frame:', e);
+      }
     }
 
-    async function loadAndDecompress() {
-      const [gzRes, idxRes] = await Promise.all([
-        fetch(GZ_PATH),
-        fetch(INDEX_PATH)
-      ]);
-
-      const totalSize = parseInt(gzRes.headers.get("Content-Length"), 10);
-      const reader = gzRes.body.getReader();
-      let loaded = 0;
-      let chunks = [];
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        loaded += value.length;
-
-        if (!animationStarted && loaded > totalSize * 0.5) {
-          animationStarted = true;
-          index = await idxRes.json();
-          const fullCompressed = fflate.concat(chunks);
-          buffer = fflate.decompressSync(fullCompressed).buffer;
-          requestAnimationFrame(animate);
-        }
-      }
-
-      // Full fallback if not triggered above
-      if (!animationStarted) {
+    async function preloadCompressed() {
+      try {
+        const [gzRes, idxRes] = await Promise.all([
+          fetch('frames/combined_0.bin.gz'),
+          fetch('frames/index_0.json')
+        ]);
+        const compressed = new Uint8Array(await gzRes.arrayBuffer());
+        const decompressed = fflate.decompressSync(compressed);
+        buffer = decompressed.buffer;
         index = await idxRes.json();
-        const fullCompressed = fflate.concat(chunks);
-        buffer = fflate.decompressSync(fullCompressed).buffer;
-        animationStarted = true;
-        requestAnimationFrame(animate);
+        console.log('✅ Loaded compressed animation');
+      } catch (e) {
+        console.error('❌ Failed to load compressed animation:', e);
       }
     }
 
     function setupPointCloud(positionArray) {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.BufferAttribute(positionArray, 3));
-      const material = new THREE.PointsMaterial({ size: 0.01, color: 0xff3333, depthTest: false, depthWrite: false });
+      const material = new THREE.PointsMaterial({
+        size: 0.01,
+        color: 0xff3333,
+        depthTest: false,
+        depthWrite: false
+      });
       pointCloud = new THREE.Points(geometry, material);
       scene.add(pointCloud);
     }
 
     function animate(timestamp) {
       requestAnimationFrame(animate);
-      if (!buffer || !index.length || timestamp - lastTime < frameDuration) return;
+      if (!buffer || index.length === 0) return;
+      if (timestamp - lastTime < frameDuration) return;
       lastTime = timestamp;
 
       currentFrame += direction;
-      if (currentFrame >= index.length) return; // Only run once
+      if (currentFrame >= index.length || currentFrame < 0) {
+        direction *= -1;
+        currentFrame += direction;
+      }
 
       const { offset, length } = index[currentFrame];
       const array = new Float32Array(buffer, offset, length / 4);
-      const position = pointCloud.geometry.attributes.position;
+      const posAttr = pointCloud.geometry.attributes.position;
 
-      if (array.length !== position.count * 3) {
-        const newGeometry = new THREE.BufferGeometry();
-        newGeometry.setAttribute("position", new THREE.BufferAttribute(array, 3));
+      if (array.length !== posAttr.count * 3) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.BufferAttribute(array, 3));
         pointCloud.geometry.dispose();
-        pointCloud.geometry = newGeometry;
+        pointCloud.geometry = geometry;
       } else {
-        position.array.set(array);
-        position.needsUpdate = true;
+        posAttr.array.set(array);
+        posAttr.needsUpdate = true;
       }
 
       renderer.render(scene, camera);
@@ -148,6 +147,8 @@
       const sentences = ["EXIST to evolve", "evolve to EXIST", "arriving...", ""];
       const sizer = document.getElementById("sizer");
       const span = document.querySelector("#hero-type span");
+      if (!span || !sizer) return console.error("❌ Missing text elements");
+
       let maxWidth = 0;
       sentences.forEach(text => {
         sizer.textContent = text;
@@ -155,9 +156,9 @@
       });
       document.getElementById("hero-type").style.width = `${maxWidth}px`;
 
-      const theater = window.theaterJS();
       const startTyping = () => {
         span.textContent = "";
+        const theater = window.theaterJS();
         theater
           .addActor("hero-type", { speed: 0.9, accuracy: 0.97, element: span })
           .addScene("hero-type:EXIST to evolve", 1000)
