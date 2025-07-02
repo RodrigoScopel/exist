@@ -100,7 +100,7 @@
     let lastTime = 0;
 
     const CHUNK_COUNT = 5;
-    const BASE_URL = "https://github.com/RodrigoScopel/exist/raw/main/public/frames";
+    const BASE_URL = "https://cdn.jsdelivr.net/gh/RodrigoScopel/exist@main/public/frames";
 
     init();
     loadChunks();
@@ -126,8 +126,8 @@
       try {
         for (let i = 0; i < CHUNK_COUNT; i++) {
           const [binRes, idxRes] = await Promise.all([
-            fetch(`${BASE_URL}/combined_${i}.bin`),
-            fetch(`${BASE_URL}/index_${i}.json`)
+          fetch(`${BASE_URL}/combined_${i}.bin`),
+          fetch(`${BASE_URL}/index_${i}.json`)
           ]);
 
           const bin = await binRes.arrayBuffer();
