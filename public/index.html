@@ -5,6 +5,7 @@
   <title>EXIST Landing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preload" href="/fonts/integralcf-bold.otf" as="font" type="font/otf" crossorigin />
+  <script src="https://cdn.jsdelivr.net/npm/fflate@0.7.4/umd/index.min.js"></script>
   <style>
     @font-face {
       font-family: 'IntegralCF-Bold';
@@ -41,7 +42,6 @@
       z-index: 9999;
       white-space: nowrap;
       overflow: hidden;
-      font-family: 'IntegralCF-Bold', sans-serif;
     }
 
     #hero-type span {
@@ -136,16 +136,23 @@
     async function loadChunks() {
       try {
         for (let i = 0; i < CHUNK_COUNT; i++) {
-          const [binRes, idxRes] = await Promise.all([
-            fetch(`frames/combined_${i}.bin`),
+          const [gzRes, idxRes] = await Promise.all([
+            fetch(`frames/combined_${i}.bin.gz`),
             fetch(`frames/index_${i}.json`)
           ]);
 
-          const bin = await binRes.arrayBuffer();
+          const gzBuffer = await gzRes.arrayBuffer();
+          const decompressed = fflate.decompressSync(new Uint8Array(gzBuffer)).buffer;
           const idx = await idxRes.json();
-          buffers.push(bin);
-          index.push(...idx.map(entry => ({ ...entry, bufferIndex: i, bufferSize: bin.byteLength })));
-          console.log(`✅ Chunk ${i}: Loaded ${bin.byteLength} bytes`);
+
+          buffers.push(decompressed);
+          index.push(...idx.map(entry => ({
+            ...entry,
+            bufferIndex: i,
+            bufferSize: decompressed.byteLength
+          })));
+
+          console.log(`✅ Chunk ${i}: Decompressed ${decompressed.byteLength} bytes`);
         }
 
         if (index.length > START_FRAME) {
@@ -211,10 +218,7 @@
       const sizer = document.getElementById("sizer");
       const span = document.querySelector("#hero-type span");
 
-      if (!span || !sizer) {
-        console.error("❌ Missing text elements");
-        return;
-      }
+      if (!span || !sizer) return;
 
       let maxWidth = 0;
       sentences.forEach(text => {
