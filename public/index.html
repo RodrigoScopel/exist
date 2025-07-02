@@ -45,8 +45,6 @@
 
     const TOTAL_CHUNKS = 10;
     const START_FRAME = 10;
-    const STATIC_DURATION = 3000;
-
     let scene, camera, renderer, pointCloud;
     let buffers = [];
     let index = [];
@@ -55,17 +53,12 @@
     let lastTime = 0;
     const targetFPS = 60;
     const frameDuration = 1000 / targetFPS;
-
-    let loopComplete = false;
+    let staticFrameShown = false;
+    let animationStarted = false;
 
     init();
-    loadStaticFrame();
-    preloadChunksUntil(0.5 * TOTAL_CHUNKS).then(() => {
-      setTimeout(() => {
-        startAnimation();
-        setupTyping();
-      }, STATIC_DURATION);
-    });
+    loadChunks();
+    setupTyping();
 
     function init() {
       scene = new THREE.Scene();
@@ -81,36 +74,29 @@
       });
     }
 
-    async function loadStaticFrame() {
-      try {
-        const res = await fetch('frames/static.json');
-        const data = await res.json();
-        const array = new Float32Array(data);
-        setupPointCloud(array);
-        renderer.render(scene, camera);
-      } catch (e) {
-        console.warn("⚠️ Static frame failed:", e);
-      }
-    }
+    async function loadChunks() {
+      const loadPromises = [];
 
-    async function preloadChunksUntil(targetChunks) {
-      for (let i = 0; i < targetChunks; i++) {
-        await loadChunk(i);
-      }
-    }
+      for (let i = 0; i < TOTAL_CHUNKS; i++) {
+        loadPromises.push(loadChunk(i));
 
-    async function startAnimation() {
-      for (let i = Math.ceil(0.5 * TOTAL_CHUNKS); i < TOTAL_CHUNKS; i++) {
-        loadChunk(i);
+        // After half the chunks are loaded, show the static frame
+        if (i + 1 === Math.ceil(TOTAL_CHUNKS / 2)) {
+          Promise.all(loadPromises).then(() => {
+            if (!staticFrameShown) {
+              showStaticFrame();
+              staticFrameShown = true;
+            }
+          });
+        }
       }
 
-      if (index.length > START_FRAME) {
-        const first = index[START_FRAME];
-        const array = safeGetFloatArray(first);
-        if (!array) throw new Error("❌ Failed to parse initial frame.");
-        setupPointCloud(array);
-        currentFrame = START_FRAME;
-        requestAnimationFrame(animate);
+      // Continue loading the rest
+      await Promise.all(loadPromises);
+
+      // Start animation only once all chunks are loaded and static frame has been shown
+      if (!animationStarted) {
+        startAnimation();
       }
     }
 
@@ -132,6 +118,30 @@
       }
     }
 
+    async function showStaticFrame() {
+      try {
+        const res = await fetch("frames/static.json");
+        if (!res.ok) throw new Error("Static frame JSON not found");
+        const data = await res.json();
+        const array = new Float32Array(data);
+        setupPointCloud(array);
+      } catch (err) {
+        console.warn("⚠️ Static frame failed:", err);
+      }
+    }
+
+    function startAnimation() {
+      if (index.length > START_FRAME) {
+        const first = index[START_FRAME];
+        const array = safeGetFloatArray(first);
+        if (!array) throw new Error("❌ Failed to parse initial frame.");
+        setupPointCloud(array);
+        currentFrame = START_FRAME;
+        animationStarted = true;
+        requestAnimationFrame(animate);
+      }
+    }
+
     function safeGetFloatArray(entry) {
       const { offset, length, bufferIndex } = entry;
       const buffer = buffers[bufferIndex];
@@ -146,6 +156,10 @@
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.BufferAttribute(positionArray, 3));
       const material = new THREE.PointsMaterial({ size: 0.01, color: 0xff3333, depthTest: false, depthWrite: false });
+      if (pointCloud) {
+        scene.remove(pointCloud);
+        pointCloud.geometry.dispose();
+      }
       pointCloud = new THREE.Points(geometry, material);
       scene.add(pointCloud);
     }
@@ -154,16 +168,11 @@
       requestAnimationFrame(animate);
       if (timestamp - lastTime < frameDuration || !buffers.length || !index.length) return;
       lastTime = timestamp;
-
       currentFrame += direction;
       if (currentFrame >= index.length || currentFrame < 0) {
-        if (!loopComplete) {
-          loopComplete = true;
-        }
         direction *= -1;
         currentFrame += direction;
       }
-
       const entry = index[currentFrame];
       const array = safeGetFloatArray(entry);
       if (!array) return;
