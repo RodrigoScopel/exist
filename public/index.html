@@ -85,12 +85,12 @@
     let scene, camera, renderer, pointCloud;
     let buffer = null;
     let index = [];
-    let currentFrame = 0;
-    let direction = 1;
+    let currentFrame = 1;
+    let direction = 2;
     let lastTime = 0;
     let animationReady = false;
     let animationStarted = false;
-    const targetFPS = 60;
+    const targetFPS = 100;
     const frameDuration = 1000 / targetFPS;
 
     const GZ_PATH = 'frames/combined_0.bin.gz';
@@ -184,7 +184,7 @@
     function startAnimation() {
       if (!animationStarted && animationReady) {
         animationStarted = true;
-        currentFrame = 0;
+        currentFrame = 1;
         requestAnimationFrame(animate);
       }
     }
