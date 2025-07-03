@@ -13,33 +13,67 @@
       font-weight: bold;
       font-style: normal;
     }
+
     html, body {
       margin: 0; padding: 0; height: 100%; width: 100%;
       background: black; overflow: hidden;
       font-family: 'IntegralCF-Bold', sans-serif;
     }
+
     canvas { position: absolute; top: 0; left: 0; display: block; z-index: 0; }
+
     #hero-type {
       position: absolute; bottom: 0; right: 0;
       color: #ff3333; font-size: 2.5rem;
       padding: 6rem; z-index: 9999;
       white-space: nowrap; overflow: hidden;
     }
+
     #hero-type span { display: inline-block; }
-    #hero-type::after { content: '|'; animation: blink 1s step-end infinite; color: #ff3333; margin-left: 4px; }
+
+    #hero-type::after {
+      content: '|'; animation: blink 1s step-end infinite;
+      color: #ff3333; margin-left: 4px;
+    }
+
     @keyframes blink { 50% { opacity: 0; } }
-    #sizer { visibility: hidden; position: absolute; white-space: nowrap; font-size: 2.5rem; padding: 2rem; }
+
+    #sizer {
+      visibility: hidden; position: absolute;
+      white-space: nowrap; font-size: 2.5rem; padding: 2rem;
+    }
+
     @media (max-width: 768px) {
       #hero-type { font-size: 1.4rem; padding: 1rem 0.5rem; bottom: 1rem; }
       #sizer { font-size: 1.4rem; padding: 1rem; }
     }
+
+#overlay {
+  position: fixed;
+  z-index: 10000;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: black;
+  color: #ff3333;
+  font-size: 2.5rem;
+  font-family: 'IntegralCF-Bold', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
   </style>
 </head>
 <body>
 
-  <audio id="introAudio" autoplay preload="auto" loop>
+  <!-- Audio: no autoplay, triggered after user click -->
+  <audio id="introAudio" preload="auto" loop>
     <source src="audio/Landing.mp3" type="audio/mpeg" />
   </audio>
+
+  <div id="overlay">Tap to start</div>
 
   <div id="hero-type"><span></span></div>
   <div id="sizer"></div>
@@ -62,13 +96,23 @@
     const GZ_PATH = 'frames/combined_0.bin.gz';
     const INDEX_PATH = 'frames/index_0.json';
     const STATIC_PATH = 'frames/static.json';
-    const TOTAL_SIZE_ESTIMATE = 40 * 1024 * 1024; // 40MB
+    const TOTAL_SIZE_ESTIMATE = 40 * 1024 * 1024;
     let loadedBytes = 0;
 
-    init();
-    setupTyping();
-    loadStaticFrame(); // load immediately on page load
-    loadCompressedWithProgress();
+    // Tap-to-start logic
+    document.getElementById('overlay').addEventListener('click', () => {
+      const audio = document.getElementById('introAudio');
+      if (audio) {
+        audio.play().catch(err => console.warn("Audio blocked:", err));
+      }
+
+      document.getElementById('overlay').style.display = 'none';
+
+      init();
+      setupTyping();
+      loadStaticFrame();
+      loadCompressedWithProgress();
+    }, { once: true });
 
     function init() {
       scene = new THREE.Scene();
@@ -112,8 +156,7 @@
             loadedBytes += value.length;
 
             if (!animationStarted && loadedBytes >= TOTAL_SIZE_ESTIMATE / 2) {
-              console.log("✅ 50% loaded, proceed to decode and animate");
-              // continue decoding and animating once fully loaded
+              console.log("✅ 50% loaded — proceed to decode + animate");
             }
           }
           done = readerDone;
