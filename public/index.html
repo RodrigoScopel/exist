@@ -68,12 +68,12 @@
 </head>
 <body>
 
-  <!-- Audio: no autoplay, triggered after user click -->
+  <!-- Audio: no autoplay, triggered after user click
   <audio id="introAudio" preload="auto" loop>
     <source src="audio/Landing.mp3" type="audio/mpeg" />
-  </audio>
+  </audio> -->
 
-  <div id="overlay">Tap to start</div>
+  <!-- <div id="overlay">Tap to start</div> -->
 
   <div id="hero-type"><span></span></div>
   <div id="sizer"></div>
@@ -99,20 +99,23 @@
     const TOTAL_SIZE_ESTIMATE = 40 * 1024 * 1024;
     let loadedBytes = 0;
 
-    // Tap-to-start logic
-    document.getElementById('overlay').addEventListener('click', () => {
-      const audio = document.getElementById('introAudio');
-      if (audio) {
-        audio.play().catch(err => console.warn("Audio blocked:", err));
-      }
+    // // Tap-to-start logic
+    // document.getElementById('overlay').addEventListener('click', () => {
+    //   const audio = document.getElementById('introAudio');
+    //   if (audio) {
+    //     audio.play().catch(err => console.warn("Audio blocked:", err));
+    //   }
 
-      document.getElementById('overlay').style.display = 'none';
-
+    //   document.getElementById('overlay').style.display = 'none';
+    
       init();
       setupTyping();
       loadStaticFrame();
       loadCompressedWithProgress();
-    }, { once: true });
+
+    // }, { once: true });
+
+
 
     function init() {
       scene = new THREE.Scene();
